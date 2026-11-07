@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>Veloterra-BRouter</Name>
+  <Repository>ghcr.io/t4s3rf4c3/veloterra-brouter:latest</Repository>
+  <Registry>https://github.com/T4s3rF4c3/veloterra/pkgs/container/veloterra-brouter</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/T4s3rF4c3/veloterra/issues</Support>
+  <Project>https://github.com/abrensch/brouter</Project>
+  <Overview>Eigener BRouter-Routing-Server für Veloterra – keine Drosselung, Rundtouren und GPX-Import in Sekunden. Lädt beim ersten Start die OpenStreetMap-Kartendaten (Standard: Deutschland und Nachbarländer, ca. 1 GB) und aktualisiert sie wöchentlich.&#xD;
+&#xD;
+In Veloterra danach BROUTER_UPSTREAM auf http://[IP-des-Servers]:17777 setzen.</Overview>
+  <Category>Tools: Other:</Category>
+  <WebUI/>
+  <TemplateURL>https://raw.githubusercontent.com/T4s3rF4c3/veloterra/main/unraid/veloterra-brouter.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/T4s3rF4c3/veloterra/main/public/icon.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+  <Config Name="BRouter-Port" Target="17777" Default="17777" Mode="tcp" Description="Port des Routing-Servers (Veloterra greift hierauf zu)" Type="Port" Display="always" Required="true" Mask="false">17777</Config>
+  <Config Name="Kartendaten" Target="/segments4" Default="/mnt/user/appdata/veloterra-brouter/segments4" Mode="rw" Description="Speicherort der Kartendaten (rd5-Kacheln, ca. 250 MB je Kachel)" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/veloterra-brouter/segments4</Config>
+  <Config Name="Eigene Profile" Target="/customprofiles" Default="/mnt/user/appdata/veloterra-brouter/customprofiles" Mode="rw" Description="Von Veloterra hochgeladene Routing-Profile" Type="Path" Display="advanced" Required="true" Mask="false">/mnt/user/appdata/veloterra-brouter/customprofiles</Config>
+  <Config Name="Kacheln" Target="SEGMENTS" Default="E5_N45 E5_N50 E10_N45 E10_N50" Mode="" Description="5°×5°-Kacheln, benannt nach der Südwest-Ecke (E5_N50 = 5–10° Ost, 50–55° Nord). Standard: Deutschland und Nachbarn. Übersicht: https://brouter.de/brouter/segments4/" Type="Variable" Display="always" Required="true" Mask="false">E5_N45 E5_N50 E10_N45 E10_N50</Config>
+  <Config Name="Aktualisieren nach (Tage)" Target="UPDATE_DAYS" Default="7" Mode="" Description="Kartendaten nach so vielen Tagen beim Neustart neu laden, 0 = nie" Type="Variable" Display="advanced" Required="false" Mask="false">7</Config>
+  <Config Name="Java-Speicher" Target="JAVA_XMX" Default="1024m" Mode="" Description="Maximaler Arbeitsspeicher für BRouter" Type="Variable" Display="advanced" Required="false" Mask="false">1024m</Config>
+  <Config Name="Gleichzeitige Anfragen" Target="MAXTHREADS" Default="4" Mode="" Description="Anzahl paralleler Routing-Anfragen" Type="Variable" Display="advanced" Required="false" Mask="false">4</Config>
+  <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="Benutzer-ID für Dateien in appdata (Unraid: 99 = nobody)" Type="Variable" Display="advanced" Required="false" Mask="false">99</Config>
+  <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Gruppen-ID für Dateien in appdata (Unraid: 100 = users)" Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
+</Container>

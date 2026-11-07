@@ -1,0 +1,19 @@
+import { setWorkerUrl } from 'maplibre-gl';
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App';
+import { initHistory } from './history';
+import './styles.css';
+
+// Worker explizit als Asset einbinden, sonst fehlt er im Produktions-Build
+setWorkerUrl(workerUrl);
+
+// Rückgängig/Wiederholen für Änderungen an der Route
+initHistory();
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+);

@@ -1,0 +1,41 @@
+# Veloterra mit eigenem BRouter-Server
+#
+#   docker compose up -d        → http://<host>:8088
+#
+# Unraid: mit dem Plugin „Docker Compose Manager“ diesen Stack anlegen und
+# APPDATA auf /mnt/user/appdata/veloterra setzen (oder unten direkt eintragen).
+# Ohne eigenen BRouter: den Dienst „brouter“ und BROUTER_UPSTREAM entfernen –
+# dann nutzt die App den öffentlichen Server brouter.de.
+
+services:
+  veloterra:
+    image: ghcr.io/t4s3rf4c3/veloterra:latest
+    build: .
+    container_name: veloterra
+    ports:
+      - "8088:80"
+    environment:
+      BROUTER_UPSTREAM: http://brouter:17777
+    depends_on:
+      - brouter
+    restart: unless-stopped
+
+  brouter:
+    image: ghcr.io/t4s3rf4c3/veloterra-brouter:latest
+    build: ./docker/brouter
+    container_name: veloterra-brouter
+    environment:
+      # Kacheln à 5°×5°: Standard = Deutschland + Nachbarländer (~1 GB)
+      SEGMENTS: "E5_N45 E5_N50 E10_N45 E10_N50"
+      UPDATE_DAYS: "7"
+      JAVA_XMX: "1024m"
+      MAXTHREADS: "4"
+      PUID: "99"
+      PGID: "100"
+    volumes:
+      - ${APPDATA:-./data}/segments4:/segments4
+      - ${APPDATA:-./data}/customprofiles:/customprofiles
+    # Port nur nötig, wenn BRouter auch direkt erreichbar sein soll
+    # ports:
+    #   - "17777:17777"
+    restart: unless-stopped

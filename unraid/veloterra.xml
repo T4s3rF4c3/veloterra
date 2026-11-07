@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>Veloterra</Name>
+  <Repository>ghcr.io/t4s3rf4c3/veloterra:latest</Repository>
+  <Registry>https://github.com/T4s3rF4c3/veloterra/pkgs/container/veloterra</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/T4s3rF4c3/veloterra/issues</Support>
+  <Project>https://github.com/T4s3rF4c3/veloterra</Project>
+  <Overview>Routenplaner für Rennrad, Gravel, MTB und Trekking: Routen nach Belag und Straßenart planen, Abschnitte gezielt umplanen, Rundtouren und Ziele finden, GPX/TCX mit Abbiegehinweisen exportieren.&#xD;
+&#xD;
+Ohne weitere Einstellung nutzt die App den öffentlichen Routing-Server brouter.de. Für schnelle Rundtouren ohne Drosselung zusätzlich den Container „Veloterra-BRouter“ installieren und BROUTER_UPSTREAM auf http://[IP-des-Servers]:17777 setzen.</Overview>
+  <Category>Tools: Other:</Category>
+  <WebUI>http://[IP]:[PORT:80]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/T4s3rF4c3/veloterra/main/unraid/veloterra.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/T4s3rF4c3/veloterra/main/public/icon.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+  <Config Name="Web-Port" Target="80" Default="8088" Mode="tcp" Description="Port, unter dem Veloterra im Browser erreichbar ist" Type="Port" Display="always" Required="true" Mask="false">8088</Config>
+  <Config Name="Eigener BRouter (intern)" Target="BROUTER_UPSTREAM" Default="" Mode="" Description="Adresse des Containers Veloterra-BRouter, z. B. http://192.168.1.10:17777 – leer lassen für den öffentlichen Server brouter.de" Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="BRouter-URL für den Browser" Target="BROUTER_URL" Default="" Mode="" Description="Nur falls der Browser einen BRouter direkt ansprechen soll (statt über BROUTER_UPSTREAM). Leer = brouter.de" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+</Container>
