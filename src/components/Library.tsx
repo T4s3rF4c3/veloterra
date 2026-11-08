@@ -1,3 +1,4 @@
+import { Panel } from './Panel';
 import { useState } from 'react';
 import { formatKm, type LngLat } from '../domain/geo';
 import type { CombinedRoute } from '../domain/route';
@@ -42,8 +43,13 @@ export function Library({ route, fit }: { route: CombinedRoute | null; fit: (c: 
   const dirty = !saved || JSON.stringify([saved.waypoints, saved.overrides]) !== JSON.stringify([waypoints, overrides]);
 
   return (
-    <section className="card">
-      <h2>Meine Routen</h2>
+    <Panel
+      id="library"
+      icon="📁"
+      title="Meine Routen"
+      badge={library.length || undefined}
+      summary={saved ? `geladen: ${saved.name}` : library.length ? 'gespeicherte Routen laden' : 'Route speichern'}
+    >
       {waypoints.length >= 2 && (
         <div className="save-row">
           <input
@@ -133,6 +139,6 @@ export function Library({ route, fit }: { route: CombinedRoute | null; fit: (c: 
           ))}
         </ul>
       )}
-    </section>
+    </Panel>
   );
 }

@@ -11,9 +11,22 @@ import {
 } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useEffect, useRef, useState } from 'react';
-import { bearing, haversine, pointAtDistance, projectOnLine, sliceLine, type LngLat } from '../domain/geo';
-import type { CombinedRoute } from '../domain/route';
+import {
+  bearing,
+  cumulativeDistances,
+  formatKm,
+  haversine,
+  pointAtDistance,
+  projectOnLine,
+  sliceLine,
+  type LngLat,
+} from '../domain/geo';
+import { nogosAlongLine, type CombinedRoute } from '../domain/route';
+import { avoidRange, dragRoute, insertWaypointOnRoute, moveWaypointLocally } from '../actions';
+import { cloneSettings } from '../domain/settings';
+import { gradeAt, roadColor, roadLabel, stretchAt, surfaceColor, surfaceLabel, wayDetails } from '../domain/stretch';
 import type { Piece } from '../hooks/useColoring';
+import { listByArea, tileUrl } from '../api/waymarked';
 import { useStore, type Basemap, type Suggestion } from '../store';
 import { SUGGESTION_COLORS } from '../domain/roundtrip';
 
@@ -130,6 +143,8 @@ interface RouteMenu {
 export interface MapApi {
   fly: (center: LngLat, zoom?: number) => void;
   fit: (coords: LngLat[], maxZoom?: number) => void;
+  /** sichtbarer Ausschnitt [west, süd, ost, nord] */
+  bounds: () => [number, number, number, number];
 }
 
 interface Props {
@@ -186,12 +201,57 @@ function pointFC(points: LngLat[]): FC {
 
 function addLayers(map: MlMap) {
   if (map.getLayer('route')) return;
+  // Netz beschilderter Rad-/MTB-Routen (Waymarked Trails), zunächst ausgeblendet
+  for (const kind of ['cycling', 'mtb'] as const) {
+    if (!map.getSource(`wmt-${kind}`))
+      map.addSource(`wmt-${kind}`, {
+        type: 'raster',
+        tiles: [tileUrl(kind)],
+        tileSize: 256,
+        maxzoom: 17,
+        attribution: '<a href="https://waymarkedtrails.org" target="_blank" rel="noreferrer">Waymarked Trails</a>',
+      });
+    map.addLayer({
+      id: `wmt-${kind}`,
+      type: 'raster',
+      source: `wmt-${kind}`,
+      layout: { visibility: 'none' },
+      paint: { 'raster-opacity': 0.85 },
+    });
+  }
   const src = (id: string) => {
     if (!map.getSource(id)) map.addSource(id, { type: 'geojson', data: EMPTY });
   };
-  ['route', 'selection', 'blocks', 'avoids', 'overrides', 'hover', 'sel-ends', 'sugg', 'import', 'uncertain'].forEach(
-    src,
-  );
+  [
+    'route',
+    'selection',
+    'blocks',
+    'avoids',
+    'overrides',
+    'hover',
+    'sel-ends',
+    'sugg',
+    'import',
+    'uncertain',
+    'netroute',
+    'drag',
+  ].forEach(src);
+
+  // gewählte Radroute
+  map.addLayer({
+    id: 'netroute-casing',
+    type: 'line',
+    source: 'netroute',
+    paint: { 'line-color': '#ffffff', 'line-width': 9, 'line-opacity': 0.9 },
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+  });
+  map.addLayer({
+    id: 'netroute',
+    type: 'line',
+    source: 'netroute',
+    paint: { 'line-color': '#c026d3', 'line-width': 5 },
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+  });
 
   map.addLayer({
     id: 'import',
@@ -275,6 +335,21 @@ function addLayers(map: MlMap) {
     source: 'sel-ends',
     paint: { 'circle-radius': 6, 'circle-color': '#0f172a', 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 },
   });
+  // Vorschau beim Ziehen der Route
+  map.addLayer({
+    id: 'drag',
+    type: 'line',
+    source: 'drag',
+    paint: { 'line-color': '#0f172a', 'line-width': 3, 'line-dasharray': [1.5, 1.5], 'line-opacity': 0.75 },
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+  });
+  map.addLayer({
+    id: 'drag-point',
+    type: 'circle',
+    source: 'drag',
+    filter: ['==', ['geometry-type'], 'Point'],
+    paint: { 'circle-radius': 7, 'circle-color': '#fff', 'circle-stroke-color': '#0f172a', 'circle-stroke-width': 3 },
+  });
   map.addLayer({
     id: 'hover',
     type: 'circle',
@@ -287,11 +362,64 @@ function setData(map: MlMap, id: string, data: FC) {
   (map.getSource(id) as GeoJSONSource | undefined)?.setData(data);
 }
 
+/** Kleines Info-Kästchen: Belag, Straßenart und Steigung an der Stelle unter der Maus. */
+function RouteTip({
+  route,
+  tip,
+  width,
+  height,
+}: {
+  route: CombinedRoute;
+  tip: { x: number; y: number; distance: number };
+  width: number;
+  height: number;
+}) {
+  const s = stretchAt(route, tip.distance);
+  if (!s) return null;
+  const grade = gradeAt(route, tip.distance);
+  const details = wayDetails(s.segment);
+  return (
+    <div
+      className="route-tip"
+      style={{
+        left: tip.x,
+        top: tip.y,
+        // nahe am rechten/unteren Rand auf die andere Seite des Mauszeigers
+        transform: `translate(${tip.x > width - 290 ? 'calc(-100% - 16px)' : '16px'}, ${
+          tip.y > height - 170 ? 'calc(-100% - 16px)' : '16px'
+        })`,
+      }}
+    >
+      <div className="route-tip-kind">
+        <i style={{ background: surfaceColor(s.surface) }} />
+        <b>{surfaceLabel(s.surface)}</b>
+        {s.surfaceInferred && <small> geschätzt</small>}
+      </div>
+      <div className="route-tip-kind">
+        <i style={{ background: roadColor(s.road) }} />
+        <b>{roadLabel(s.road)}</b>
+      </div>
+      {details.length > 0 && <small>{details.join(' · ')}</small>}
+      <small>
+        km {(tip.distance / 1000).toFixed(1).replace('.', ',')} · {grade >= 0 ? '↗' : '↘'}{' '}
+        {Math.abs(grade).toFixed(1).replace('.', ',')} % · Stück {formatKm(s.end - s.start)}
+      </small>
+      <small className="route-tip-hint">Ziehen = umleiten · Rechtsklick = Optionen</small>
+    </div>
+  );
+}
+
 export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const [styleReady, setStyleReady] = useState(0);
   const [menu, setMenu] = useState<RouteMenu | null>(null);
+  /** Info-Kästchen beim Überfahren der Route */
+  const [tip, setTip] = useState<{ x: number; y: number; distance: number } | null>(null);
+  /** Route wird gerade mit der Maus gezogen */
+  const drag = useRef<{ x: number; y: number; leg: number; d0: number; active: boolean } | null>(null);
+  const menuOpen = useRef(false);
+  menuOpen.current = !!menu;
   const markers = useRef(new Map<string, Marker>());
   const markerOwner = useRef<MlMap | null>(null);
 
@@ -369,14 +497,99 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
         map.getCanvas().style.cursor = hitSuggestion(e) ? 'pointer' : '';
         return;
       }
-      const hit = hitRoute(e);
-      map.getCanvas().style.cursor = hit ? 'pointer' : '';
       const st = useStore.getState();
+      const d = drag.current;
+      if (d) {
+        // erst ab 5 Pixel Bewegung gilt es als Ziehen (sonst Klick)
+        if (!d.active && Math.hypot(e.point.x - d.x, e.point.y - d.y) > 5) d.active = true;
+        if (d.active) {
+          const wps = st.waypoints;
+          const a = wps[d.leg];
+          const b = wps[d.leg + 1];
+          const p: LngLat = [e.lngLat.lng, e.lngLat.lat];
+          setData(map, 'drag', {
+            type: 'FeatureCollection',
+            features: [
+              {
+                type: 'Feature',
+                properties: {},
+                geometry: { type: 'LineString', coordinates: [[a.lng, a.lat], p, [b.lng, b.lat]] },
+              },
+              { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: p } },
+            ],
+          });
+          map.getCanvas().style.cursor = 'grabbing';
+          setTip(null);
+        }
+        return;
+      }
+      const hit = hitRoute(e);
+      map.getCanvas().style.cursor = hit ? 'grab' : '';
       st.setHoverDistance(hit ? hit.distance : null);
+      setTip(hit && !menuOpen.current && !st.hideRoute ? { x: e.point.x, y: e.point.y, distance: hit.distance } : null);
+    });
+    map.getCanvas().addEventListener('mouseleave', () => setTip(null));
+
+    // Route an eine andere Straße ziehen: neuer Wegpunkt an der Stelle, wo losgelassen wird
+    map.on('mousedown', (e) => {
+      const st = useStore.getState();
+      if (e.originalEvent.button !== 0 || st.mode !== 'route' || st.selection?.end === null) return;
+      const hit = hitRoute(e);
+      const r = routeRef.current;
+      if (!hit || !r) return;
+      const leg = r.legRanges.findIndex((l) => r.dist[l.from] <= hit.distance && r.dist[l.to] >= hit.distance);
+      if (leg < 0) return;
+      e.preventDefault(); // Karte nicht verschieben
+      drag.current = { x: e.point.x, y: e.point.y, leg, d0: hit.distance, active: false };
+      const finish = (ev: MouseEvent) => {
+        window.removeEventListener('mouseup', finish);
+        const d = drag.current;
+        drag.current = null;
+        setData(map, 'drag', EMPTY);
+        map.getCanvas().style.cursor = '';
+        if (!d?.active) return;
+        const rect = map.getCanvas().getBoundingClientRect();
+        const p = map.unproject([ev.clientX - rect.left, ev.clientY - rect.top]);
+        setMenu(null);
+        const r2 = routeRef.current;
+        if (r2) dragRoute(r2, d.d0, [p.lng, p.lat]);
+        else useStore.getState().insertWaypoint(d.leg + 1, [p.lng, p.lat]);
+      };
+      window.addEventListener('mouseup', finish);
+    });
+
+    // Rechtsklick auf die Route: Menü für das Stück an dieser Stelle
+    map.on('contextmenu', (e) => {
+      const hit = hitRoute(e);
+      if (!hit) return;
+      e.preventDefault();
+      setTip(null);
+      setMenu({ x: e.point.x, y: e.point.y, distance: hit.distance, point: hit.point });
     });
 
     map.on('click', (e) => {
       const st = useStore.getState();
+      if (st.mode === 'network') {
+        // Radroute unter dem Klick suchen (±12 Pixel)
+        const a = map.unproject([e.point.x - 12, e.point.y + 12]);
+        const b = map.unproject([e.point.x + 12, e.point.y - 12]);
+        const kind = st.networkKind;
+        listByArea(kind, [a.lng, a.lat, b.lng, b.lat], undefined, 5)
+          .then((found) => {
+            const s2 = useStore.getState();
+            if (s2.mode !== 'network' || s2.networkKind !== kind) return;
+            if (!found.length) {
+              s2.setActiveNetwork(null);
+              return;
+            }
+            // bereits gewählte Route nicht erneut wählen, sondern die nächste
+            const pick = found.find((r) => r.id !== s2.activeNetwork) ?? found[0];
+            if (!s2.networkRoutes.some((r) => r.id === pick.id)) s2.setNetworkRoutes([pick, ...s2.networkRoutes]);
+            s2.setActiveNetwork(pick.id);
+          })
+          .catch(() => undefined);
+        return;
+      }
       if (st.mode === 'explore') {
         if (st.activePoi) st.setActivePoi(null);
         else st.setLoopStart([e.lngLat.lng, e.lngLat.lat]);
@@ -401,6 +614,7 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
         return;
       }
       if (hit) {
+        setTip(null);
         setMenu({ x: e.point.x, y: e.point.y, distance: hit.distance, point: hit.point });
         return;
       }
@@ -420,6 +634,10 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
         coords.forEach((c) => b.extend(c));
         const sidebarRight = window.innerWidth > 760 ? 40 : 20;
         map.fitBounds(b, { padding: { top: 90, bottom: 170, left: sidebarRight, right: 60 }, maxZoom });
+      },
+      bounds: () => {
+        const b = map.getBounds();
+        return [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()];
       },
     });
     return () => map.remove();
@@ -481,7 +699,7 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
       startMarker.current.remove();
       startMarker.current = null;
     }
-    if (mode === 'route' || !loopStart) {
+    if ((mode !== 'loop' && mode !== 'explore') || !loopStart) {
       startMarker.current?.remove();
       startMarker.current = null;
       return;
@@ -593,7 +811,8 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
         m = new Marker({ element: el, draggable: true }).setLngLat([wp.lng, wp.lat]).addTo(map);
         m.on('dragend', () => {
           const p = m!.getLngLat();
-          useStore.getState().moveWaypoint(wp.id, [p.lng, p.lat]);
+          // nur in der Nähe des Punkts neu planen, der Rest der Route bleibt
+          moveWaypointLocally(routeRef.current, wp.id, [p.lng, p.lat]);
         });
         markers.current.set(wp.id, m);
       }
@@ -613,6 +832,21 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
   }, [waypoints, styleReady, mode]);
 
   // Original-Track eines GPX-Imports
+  // Radrouten-Netz und gewählte Radroute
+  const netOverlay = useStore((s) => s.netOverlay);
+  const networkKind = useStore((s) => s.networkKind);
+  const networkLines = useStore((s) => s.networkLines);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !styleReady) return;
+    const shown = mode === 'network' ? networkKind : netOverlay;
+    for (const kind of ['cycling', 'mtb'] as const) {
+      if (map.getLayer(`wmt-${kind}`))
+        map.setLayoutProperty(`wmt-${kind}`, 'visibility', shown === kind ? 'visible' : 'none');
+    }
+    setData(map, 'netroute', mode === 'network' ? lineFC(networkLines) : EMPTY);
+  }, [netOverlay, networkKind, networkLines, mode, styleReady]);
+
   const importTrack = useStore((s) => s.importTrack);
   useEffect(() => {
     const map = mapRef.current;
@@ -718,12 +952,56 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
     setMenu(null);
   };
 
+  // Esc schließt das Menü
+  useEffect(() => {
+    if (!menu) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setMenu(null);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [menu]);
+
+  /** Stück gleicher Art an der Stelle des Menüs */
+  const stretch = menu && route ? stretchAt(route, menu.distance) : null;
+  const settings = useStore((s) => s.settings);
+
+  const avoidStretch = () => {
+    if (!stretch || !route) return;
+    avoidRange(route, stretch.start, stretch.end);
+    setMenu(null);
+  };
+
+  const selectStretch = () => {
+    if (!stretch) return;
+    useStore.getState().setSelection({ start: stretch.start, end: stretch.end });
+    setMenu(null);
+  };
+
+  const blockStretch = () => {
+    if (!stretch || !route) return;
+    const line = sliceLine(route.coords, route.dist, stretch.start, stretch.end);
+    useStore.getState().addBlock({
+      label: `${roadLabel(stretch.road)}, ${formatKm(stretch.end - stretch.start)}`,
+      line,
+      nogos: nogosAlongLine(line, cumulativeDistances(line)),
+    });
+    setMenu(null);
+  };
+
+  /** Belag bzw. Straßenart im Routing-Profil auf „Meiden“ stellen */
+  const avoidKind = (what: 'surface' | 'road') => {
+    if (!stretch) return;
+    const st = useStore.getState();
+    const next = cloneSettings(st.settings);
+    if (what === 'surface') next.surface[stretch.surface] = 'avoid';
+    else next.road[stretch.road] = 'avoid';
+    st.setSettings(next, null);
+    setMenu(null);
+  };
+  const canAvoid = (p: string) => p === 'prefer' || p === 'neutral';
+
   const insertHere = () => {
     if (!menu || !route) return;
-    const leg = route.legRanges.findIndex((l) => {
-      return route.dist[l.from] <= menu.distance && route.dist[l.to] >= menu.distance;
-    });
-    useStore.getState().insertWaypoint(Math.max(leg, 0) + 1, menu.point);
+    insertWaypointOnRoute(route, menu.distance);
     setMenu(null);
   };
 
@@ -736,12 +1014,52 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
           style={{
             left: menu.x,
             top: menu.y,
-            // am rechten Rand nach links aufklappen
-            transform:
-              menu.x > (container.current?.clientWidth ?? 0) - 260 ? 'translate(calc(-100% - 8px), 8px)' : undefined,
+            // am rechten bzw. unteren Rand in die andere Richtung aufklappen
+            transform: `translate(${
+              menu.x > (container.current?.clientWidth ?? 0) - 280 ? 'calc(-100% - 8px)' : '8px'
+            }, ${menu.y > (container.current?.clientHeight ?? 0) - 440 ? 'calc(-100% - 8px)' : '8px'})`,
           }}
           onClick={(e) => e.stopPropagation()}
+          onContextMenu={(e) => e.preventDefault()}
         >
+          {stretch && (
+            <>
+              <div className="menu-info">
+                <div className="menu-info-kind">
+                  <i style={{ background: surfaceColor(stretch.surface) }} />
+                  <b>{surfaceLabel(stretch.surface)}</b>
+                  {stretch.surfaceInferred && <small> (geschätzt)</small>}
+                  <span className="sep">·</span>
+                  <i style={{ background: roadColor(stretch.road) }} />
+                  <b>{roadLabel(stretch.road)}</b>
+                </div>
+                <small>
+                  {formatKm(stretch.end - stretch.start)} · km {(stretch.start / 1000).toFixed(1).replace('.', ',')}–
+                  {(stretch.end / 1000).toFixed(1).replace('.', ',')}
+                </small>
+              </div>
+              <button onClick={avoidStretch}>
+                <span className="ico">⤳</span> Dieses Stück umfahren
+              </button>
+              <button onClick={selectStretch}>
+                <span className="ico">▭</span> Stück markieren <small>(anders planen …)</small>
+              </button>
+              <button onClick={blockStretch}>
+                <span className="ico">⛔</span> Stück immer meiden
+              </button>
+              {canAvoid(settings.surface[stretch.surface]) && (
+                <button onClick={() => avoidKind('surface')}>
+                  <span className="ico">↓</span> {surfaceLabel(stretch.surface)} generell meiden
+                </button>
+              )}
+              {canAvoid(settings.road[stretch.road]) && (
+                <button onClick={() => avoidKind('road')}>
+                  <span className="ico">↓</span> {roadLabel(stretch.road)} generell meiden
+                </button>
+              )}
+              <hr />
+            </>
+          )}
           <button onClick={startSelection}>
             <span className="ico">⟷</span> Abschnitt ab hier markieren
           </button>
@@ -765,7 +1083,15 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
           </button>
         </div>
       )}
-      {mode !== 'route' && !loopStart && (
+      {tip && route && !menu && (
+        <RouteTip
+          route={route}
+          tip={tip}
+          width={container.current?.clientWidth ?? 0}
+          height={container.current?.clientHeight ?? 0}
+        />
+      )}
+      {(mode === 'loop' || mode === 'explore') && !loopStart && (
         <div className="map-hint">Klicke auf die Karte, um den Startpunkt zu setzen</div>
       )}
       {mode === 'route' && selection && selection.end === null && (

@@ -1,3 +1,4 @@
+import { Panel } from './Panel';
 import { useState } from 'react';
 import type { Climb } from '../domain/climbs';
 import { formatKm, type LngLat } from '../domain/geo';
@@ -35,8 +36,17 @@ export function ClimbList({
         .slice(0, LIMIT)
         .sort((a, b) => a.start - b.start);
   return (
-    <section className="card">
-      <h2>Anstiege {climbs.length > LIMIT && !all ? `(${LIMIT} schwerste von ${climbs.length})` : ''}</h2>
+    <Panel
+      id="climbs"
+      icon="⛰️"
+      title="Anstiege"
+      badge={climbs.length}
+      summary={(() => {
+        const hardest = [...climbs].sort((a, b) => b.gain * b.avg - a.gain * a.avg)[0];
+        return `schwerster: ${formatKm(hardest.length)} · ${hardest.avg.toFixed(1).replace('.', ',')} % · ${Math.round(hardest.gain)} hm`;
+      })()}
+    >
+      {climbs.length > LIMIT && !all && <p className="muted small">Die {LIMIT} schwersten in Streckenreihenfolge:</p>}
       <ul className="list climbs">
         {shown.map((c, i) => (
           <li
@@ -67,7 +77,7 @@ export function ClimbList({
           {all ? 'Nur die schwersten zeigen' : `Alle ${climbs.length} Anstiege zeigen`}
         </button>
       )}
-    </section>
+    </Panel>
   );
 }
 
@@ -89,14 +99,19 @@ export function StopsList({
   const st = useStore.getState;
 
   return (
-    <section className="card">
-      <div className="card-head">
-        <h2>Stopps unterwegs</h2>
-        {loading && <span className="spinner" title="Wird geladen" />}
+    <Panel
+      id="stops"
+      icon="☕"
+      title="Stopps unterwegs"
+      defaultOpen
+      badge={loading ? <span className="spinner" title="Wird geladen" /> : stops.length}
+      summary="Cafés, Wasser, Rad-Service an der Route"
+      actions={
         <button className="mini ghost" onClick={() => st().setShowStops(false)} title="Stopps ausblenden">
           ✕
         </button>
-      </div>
+      }
+    >
       <div className="chips">
         {STOP_CATEGORIES.map((c) => (
           <button
@@ -146,6 +161,6 @@ export function StopsList({
           ))}
         </ul>
       )}
-    </section>
+    </Panel>
   );
 }

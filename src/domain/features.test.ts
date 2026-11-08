@@ -220,3 +220,60 @@ describe('Belags-Check', () => {
     expect(s[0].id).not.toBe(s[2].id);
   });
 });
+
+describe('Radrouten (Waymarked Trails)', () => {
+  it('hängt Wegstücke in Fahrtrichtung aneinander', async () => {
+    const { chainSegments, clipToBounds } = await import('../api/waymarked');
+    // erstes Stück „falsch herum“, drittes ebenfalls
+    const path = chainSegments([
+      [
+        [8.01, 50],
+        [8, 50],
+      ],
+      [
+        [8.01, 50],
+        [8.02, 50],
+      ],
+      [
+        [8.04, 50],
+        [8.03, 50],
+        [8.02, 50],
+      ],
+    ]);
+    expect(path.map((p) => p[0])).toEqual([8, 8.01, 8.02, 8.03, 8.04]);
+    expect(clipToBounds(path, [8.005, 49, 8.035, 51]).map((p) => p[0])).toEqual([8.01, 8.02, 8.03]);
+  });
+});
+
+describe('Stück gleicher Art', () => {
+  it('fasst benachbarte Abschnitte mit gleichem Belag und gleicher Straßenart zusammen', async () => {
+    const { stretchAt, gradeAt, wayDetails } = await import('./stretch');
+    const seg = (from: number, to: number, tags: string) => {
+      const t = parseWayTags(tags);
+      const sc = classifySurface(t);
+      return { from, to, tags: t, surface: sc.cat, surfaceInferred: sc.inferred, road: classifyRoad(t) };
+    };
+    const route = combineLegs([
+      {
+        key: 'a',
+        result: {
+          ...line(40, (i) => 100 + i * 2),
+          segments: [
+            seg(0, 10, 'highway=tertiary surface=asphalt'),
+            seg(10, 15, 'highway=track surface=gravel tracktype=grade3'),
+            seg(15, 25, 'highway=track surface=pebblestone smoothness=bad'),
+            seg(25, 39, 'highway=tertiary surface=asphalt'),
+          ],
+        },
+      },
+    ])!;
+    const s = stretchAt(route, route.dist[18])!;
+    expect(s.surface).toBe('gravel');
+    expect(s.road).toBe('track');
+    expect(s.start).toBeCloseTo(route.dist[10]);
+    expect(s.end).toBeCloseTo(route.dist[25]);
+    expect(stretchAt(route, 0)!.end).toBeCloseTo(route.dist[10]);
+    expect(gradeAt(route, route.dist[20])).toBeCloseTo((2 / 71.5) * 100, 0);
+    expect(wayDetails(s.segment)).toEqual(['Wirtschaftsweg', 'Fahrbahn holprig']);
+  });
+});

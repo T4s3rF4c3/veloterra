@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { routeVia } from '../api/brouter';
-import { cumulativeDistances, resample } from '../domain/geo';
+import { cumulativeDistances, resample, type LngLat } from '../domain/geo';
 import { parseGpx } from '../domain/gpx';
 import type { LegOverride, Waypoint } from '../domain/route';
 import { legKey } from '../domain/route';
@@ -22,10 +22,31 @@ export const FOLLOW_SETTINGS: RoutingSettings = {
 };
 
 /**
- * GPX-Datei laden: Der Track wird mit dichten Stützpunkten über BRouter
- * nachgerechnet, damit Belag und Straßenart bekannt sind, und dann in
- * bearbeitbare Etappen zerlegt.
+ * Fremden Verlauf (GPX-Track, beschilderte Radroute …) übernehmen: Er wird mit
+ * dichten Stützpunkten über BRouter nachgerechnet, damit Belag und Straßenart
+ * bekannt sind, und dann in bearbeitbare Etappen zerlegt.
  */
+export async function importTrack(name: string, coords: LngLat[]) {
+  const dist = cumulativeDistances(coords);
+  const total = dist[dist.length - 1];
+  if (!(total >= 200)) throw new Error('Der Verlauf ist zu kurz.');
+  const spacing = Math.max(700, total / 180);
+  const points = resample(coords, dist, spacing);
+  const leg = await routeVia(points, FOLLOW_SETTINGS, []);
+  const { points: cuts, legs } = splitIntoLegs(leg, legCountFor(leg.length));
+  const wps: Waypoint[] = cuts.map((p) => ({ id: uid(), lng: p[0], lat: p[1] }));
+  const st = useStore.getState();
+  const nogos = globalNogos(st.blocks);
+  const overrides: Record<string, LegOverride> = {};
+  legs.forEach((l, i) => {
+    overrides[legKey(wps[i], wps[i + 1])] = { settings: FOLLOW_SETTINGS, presetLabel: 'Import' };
+    primeLeg({ from: wps[i], to: wps[i + 1], settings: FOLLOW_SETTINGS, nogos, alternative: 0 }, l);
+  });
+  st.replaceRoute(wps, overrides, name);
+  st.setImportTrack({ name, coords });
+}
+
+/** GPX-Datei laden (Knopf oder Datei auf die Karte ziehen). */
 export function useImport() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,23 +56,7 @@ export function useImport() {
     setError(null);
     try {
       const { name, coords } = parseGpx(await file.text());
-      const dist = cumulativeDistances(coords);
-      const total = dist[dist.length - 1];
-      if (total < 200) throw new Error('Der Track ist zu kurz.');
-      const spacing = Math.max(700, total / 180);
-      const points = resample(coords, dist, spacing);
-      const leg = await routeVia(points, FOLLOW_SETTINGS, []);
-      const { points: cuts, legs } = splitIntoLegs(leg, legCountFor(leg.length));
-      const wps: Waypoint[] = cuts.map((p) => ({ id: uid(), lng: p[0], lat: p[1] }));
-      const st = useStore.getState();
-      const nogos = globalNogos(st.blocks);
-      const overrides: Record<string, LegOverride> = {};
-      legs.forEach((l, i) => {
-        overrides[legKey(wps[i], wps[i + 1])] = { settings: FOLLOW_SETTINGS, presetLabel: 'Import' };
-        primeLeg({ from: wps[i], to: wps[i + 1], settings: FOLLOW_SETTINGS, nogos, alternative: 0 }, l);
-      });
-      st.replaceRoute(wps, overrides, name);
-      st.setImportTrack({ name, coords });
+      await importTrack(name, coords);
     } catch (e) {
       setError((e as Error).message);
     } finally {

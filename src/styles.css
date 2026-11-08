@@ -1589,3 +1589,505 @@ button.more {
   font-size: 12.5px;
   white-space: nowrap;
 }
+
+/* ===== Aufgeräumte Oberfläche ===== */
+
+/* Kopf und Modus-Tabs */
+.brand img.logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: none;
+}
+.mode-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  background: #e8ecf1;
+  padding: 4px;
+  border-radius: 12px;
+}
+.mode-tabs button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  border: none;
+  background: transparent;
+  padding: 6px 2px 5px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.mode-tabs button span {
+  font-size: 16px;
+  line-height: 1.2;
+}
+.mode-tabs button.on {
+  background: var(--panel);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
+}
+
+/* Aufklappbare Bereiche */
+.panel {
+  padding: 0;
+}
+.panel-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-right: 8px;
+}
+.panel-toggle-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  padding: 11px 6px 11px 14px;
+  text-align: left;
+  border-radius: var(--radius);
+}
+.panel-toggle-btn:hover:not(:disabled) {
+  background: transparent;
+}
+.panel-toggle-btn:hover .panel-title b {
+  color: var(--accent);
+}
+.panel-icon {
+  width: 22px;
+  text-align: center;
+  font-size: 16px;
+  flex: none;
+}
+.panel-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.panel-title b {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.panel-title small {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.panel-badge {
+  flex: none;
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+.panel-badge .spinner {
+  margin: 0;
+  width: 12px;
+  height: 12px;
+  display: inline-block;
+  vertical-align: middle;
+}
+.panel .chev {
+  flex: none;
+}
+.panel.open .chev {
+  transform: rotate(90deg);
+}
+.panel-body {
+  padding: 0 14px 14px;
+  animation: rise 0.12s ease-out;
+}
+
+/* Routenübersicht */
+.summary .empty p {
+  margin: 0 0 6px;
+  line-height: 1.5;
+}
+.mix {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+.mix-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.mix .bar {
+  height: 8px;
+}
+.mix .bar-legend {
+  margin-top: 5px;
+}
+button.link {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--accent);
+  font-size: 12px;
+}
+button.link:hover:not(:disabled) {
+  background: none;
+  text-decoration: underline;
+}
+.summary .import-note {
+  margin-top: 12px;
+}
+.toolbar {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  margin-top: 14px;
+}
+.toolbar > button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 7px 2px 6px;
+  font-size: 11px;
+  color: var(--muted);
+  border-color: transparent;
+  background: var(--soft);
+}
+.toolbar > button span {
+  font-size: 15px;
+  color: var(--text);
+  line-height: 1.2;
+}
+.toolbar > button:hover:not(:disabled) {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+.toolbar .error.wide {
+  grid-column: 1 / -1;
+}
+
+/* Export-Menü */
+.export-menu {
+  position: relative;
+  display: flex;
+  margin-top: 10px;
+}
+.export-menu > .primary:first-child {
+  flex: 1;
+  border-radius: 8px 0 0 8px;
+}
+.export-menu .more-btn {
+  border-radius: 0 8px 8px 0;
+  border-left: 1px solid rgb(255 255 255 / 0.35);
+  padding: 7px 10px;
+}
+.menu {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  padding: 4px;
+  animation: rise 0.12s ease-out;
+}
+.menu button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  border: none;
+  text-align: left;
+}
+.menu small {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+/* Kartenleiste */
+.tool-btn {
+  background: rgb(255 255 255 / 0.96);
+  border: none;
+  box-shadow: var(--shadow);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 7px 12px;
+  white-space: nowrap;
+}
+.tool-btn small {
+  color: var(--muted);
+  font-weight: 400;
+}
+.tool-btn.on {
+  background: var(--text);
+  color: #fff;
+}
+.tool-btn.on small {
+  color: #cbd5e1;
+}
+.tool-btn:hover:not(:disabled):not(.on) {
+  background: #fff;
+}
+.layers {
+  position: relative;
+}
+.layers-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 10;
+  width: 320px;
+  max-width: calc(100vw - 80px);
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  background: var(--panel);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--line);
+  padding: 12px;
+  animation: rise 0.12s ease-out;
+}
+.layers-menu h4 {
+  margin: 12px 0 6px;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.layers-menu h4:first-child {
+  margin-top: 0;
+}
+.basemaps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.basemap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 2px 6px;
+  font-size: 11.5px;
+  border-color: transparent;
+  background: transparent;
+}
+.basemap .bm-thumb {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 7px;
+  border: 2px solid var(--line);
+}
+.basemap.on .bm-thumb {
+  border-color: var(--accent);
+}
+.basemap.on {
+  font-weight: 600;
+  color: var(--accent);
+}
+.bm-light .bm-thumb {
+  background: linear-gradient(135deg, #f8fafc 0 45%, #e2e8f0 45% 55%, #f1f5f9 55%);
+}
+.bm-standard .bm-thumb {
+  background: linear-gradient(135deg, #dcfce7 0 40%, #fde68a 40% 48%, #f8fafc 48% 70%, #bfdbfe 70%);
+}
+.bm-satellite .bm-thumb {
+  background: linear-gradient(135deg, #365314 0 35%, #a3a38a 35% 42%, #4d7c0f 42% 70%, #57534e 70%);
+}
+.bm-aerial .bm-thumb {
+  background: linear-gradient(135deg, #3f6212 0 30%, #d6d3d1 30% 36%, #65a30d 36% 62%, #a8a29e 62% 66%, #4d7c0f 66%);
+}
+.choice.wrap {
+  display: flex;
+  flex-wrap: wrap;
+}
+.layer-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 6px 4px;
+  text-align: left;
+}
+.layer-toggle > span:last-child {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+}
+.layer-toggle small {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.switch {
+  flex: none;
+  position: relative;
+  width: 32px;
+  height: 18px;
+  border-radius: 999px;
+  background: #cbd5e1;
+  transition: background 0.15s;
+}
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+  transition: transform 0.15s;
+}
+.layer-toggle.on .switch {
+  background: var(--accent);
+}
+.layer-toggle.on .switch::after {
+  transform: translateX(14px);
+}
+.map-tools .choice.history {
+  background: rgb(255 255 255 / 0.96);
+}
+
+/* Radwege */
+.choice.wide-choice {
+  display: flex;
+  margin-bottom: 8px;
+}
+.choice.wide-choice button {
+  flex: 1;
+}
+.suggestions.network li {
+  align-items: flex-start;
+}
+.net-symbol {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+}
+.net-symbol img {
+  max-width: 30px;
+  max-height: 30px;
+}
+.net-detail {
+  margin-top: 8px;
+  cursor: default;
+}
+.net-detail p {
+  margin: 0 0 8px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.net-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.net-actions .primary {
+  flex: 1 1 100%;
+}
+
+@media (max-width: 760px) {
+  .layers-menu {
+    position: fixed;
+    top: 56px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: none;
+  }
+  .tool-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+}
+/* Kartenleiste samt Ebenen-Menü liegt über Legende und Hinweisen */
+.map-tools {
+  z-index: 5;
+}
+
+/* Info beim Überfahren der Route */
+.route-tip {
+  position: absolute;
+  z-index: 4;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 260px;
+  background: rgb(15 23 42 / 0.92);
+  color: #fff;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  box-shadow: var(--shadow);
+}
+.route-tip small {
+  color: #cbd5e1;
+  font-size: 11.5px;
+}
+.route-tip .route-tip-hint {
+  color: #94a3b8;
+  margin-top: 3px;
+  font-size: 10.5px;
+}
+.route-tip-kind {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.route-tip-kind i,
+.menu-info-kind i {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+}
+.route-tip-kind small {
+  margin-left: 2px;
+}
+
+/* Kopf des Routen-Menüs: was ist an dieser Stelle */
+.menu-info {
+  padding: 6px 10px 8px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 4px;
+}
+.menu-info-kind {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+.menu-info-kind .sep {
+  color: var(--muted);
+  margin: 0 2px;
+}
+.menu-info small,
+.route-menu button small {
+  color: var(--muted);
+  font-size: 11.5px;
+}

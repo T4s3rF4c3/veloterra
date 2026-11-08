@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ElevationChart } from './components/ElevationChart';
 import { LegEditor } from './components/LegEditor';
+import { MapToolbar } from './components/MapToolbar';
 import { MapView, type MapApi } from './components/MapView';
 import { PhotoStrip } from './components/PhotoStrip';
 import { PoiCard } from './components/PoiCard';
@@ -13,47 +14,21 @@ import { useRouting } from './hooks/useRouting';
 import { useStops } from './hooks/useStops';
 import { departureTime, useWind } from './hooks/useWind';
 import { redo, undo, useHistory } from './history';
-import { useStore, type Basemap, type ColorMode } from './store';
-
-const MODES: { value: ColorMode; label: string; title?: string }[] = [
-  { value: 'surface', label: 'Untergrund' },
-  { value: 'road', label: 'Straßenart' },
-  { value: 'grade', label: 'Steigung' },
-  { value: 'wind', label: 'Wind', title: 'Gegen-/Rückenwind zur gewählten Abfahrtszeit' },
-  { value: 'plain', label: 'Einfarbig' },
-];
-
-const BASEMAPS: { value: Basemap; label: string; title?: string }[] = [
-  { value: 'light', label: 'Hell' },
-  { value: 'standard', label: 'Standard' },
-  { value: 'satellite', label: 'Satellit', title: 'Esri World Imagery – weltweit' },
-  {
-    value: 'aerial',
-    label: 'Luftbild DE',
-    title: 'Amtliche Luftbilder (20–40 cm) für RLP, NRW, Hessen und Bayern – schärfer und aktueller, sonst Esri',
-  },
-];
+import { useStore } from './store';
 
 export default function App() {
   const { route, stale, legs, loading, errors, retry } = useRouting();
   const selection = useStore((s) => s.selection);
   const colorMode = useStore((s) => s.colorMode);
-  const basemap = useStore((s) => s.basemap);
   const editingLeg = useStore((s) => s.editingLeg);
   const mapApi = useRef<MapApi | null>(null);
   const mode = useStore((s) => s.mode);
-  const hideRoute = useStore((s) => s.hideRoute);
-  const showStops = useStore((s) => s.showStops);
   const showPhotos = useStore((s) => s.showPhotos);
   const departure = departureTime(useStore((s) => s.departure));
   const waypoints = useStore((s) => s.waypoints);
   const loopStart = useStore((s) => s.loopStart);
   const [panelOpen, setPanelOpen] = useState(true);
-  const canUndo = useHistory((s) => s.canUndo);
-  const canRedo = useHistory((s) => s.canRedo);
   const notice = useHistory((s) => s.notice);
-  const mac = /Mac|iPhone|iPad/.test(navigator.platform);
-  const key = mac ? '⌘' : 'Strg+';
 
   // Wind am Start der Route bzw. am Rundtour-Startpunkt
   const windPoint: LngLat | null =
@@ -112,6 +87,7 @@ export default function App() {
         fly={(c: LngLat, z?: number) => mapApi.current?.fly(c, z)}
         fit={(c: LngLat[], z?: number) => mapApi.current?.fit(c, z)}
         sections={sections}
+        bounds={() => mapApi.current?.bounds() ?? null}
         coloring={coloring}
         wind={wind}
         stops={stops}
@@ -132,72 +108,7 @@ export default function App() {
         <button className="panel-toggle" onClick={() => setPanelOpen(!panelOpen)} aria-label="Seitenleiste umschalten">
           {panelOpen ? '‹' : '›'}
         </button>
-        <div className="map-tools">
-          <div className="choice history">
-            <button onClick={undo} disabled={!canUndo} title={`Rückgängig (${key}Z)`} aria-label="Rückgängig">
-              ↶
-            </button>
-            <button
-              onClick={redo}
-              disabled={!canRedo}
-              title={`Wiederholen (${key}${mac ? '⇧Z' : 'Y'})`}
-              aria-label="Wiederholen"
-            >
-              ↷
-            </button>
-          </div>
-          {mode === 'route' && (
-            <div className="choice">
-              {MODES.map((m) => (
-                <button
-                  key={m.value}
-                  className={colorMode === m.value ? 'on' : ''}
-                  onClick={() => useStore.getState().setColorMode(m.value)}
-                  title={m.title}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-          )}
-          <div className="choice">
-            {BASEMAPS.map((b) => (
-              <button
-                key={b.value}
-                className={basemap === b.value ? 'on' : ''}
-                onClick={() => useStore.getState().setBasemap(b.value)}
-                title={b.title}
-              >
-                {b.label}
-              </button>
-            ))}
-          </div>
-          {mode === 'route' && route && (
-            <div className="choice">
-              <button
-                className={hideRoute ? 'on' : ''}
-                onClick={() => useStore.getState().setHideRoute(!hideRoute)}
-                title="Route ausblenden, um die Straße darunter zu sehen (Taste H)"
-              >
-                {hideRoute ? '◌ Einblenden' : '◉ Ausblenden'}
-              </button>
-              <button
-                className={showStops ? 'on' : ''}
-                onClick={() => useStore.getState().setShowStops(!showStops)}
-                title="Cafés, Trinkwasser, Rad-Service … entlang der Route"
-              >
-                ☕ Stopps
-              </button>
-              <button
-                className={showPhotos ? 'on' : ''}
-                onClick={() => useStore.getState().setShowPhotos(!showPhotos)}
-                title="Straßenfotos entlang der Route (Panoramax, optional Mapillary)"
-              >
-                📷 Fotos
-              </button>
-            </div>
-          )}
-        </div>
+        <MapToolbar hasRoute={!!route} />
         {mode === 'route' && route && coloring.legend.length > 0 && (
           <div className="map-legend">
             {coloring.legend.map((c) => (

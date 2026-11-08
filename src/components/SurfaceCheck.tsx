@@ -1,3 +1,4 @@
+import { Panel } from './Panel';
 import { useEffect, useState } from 'react';
 import { avoidRange } from '../actions';
 import { photosAlong, type Photo } from '../api/photos';
@@ -86,15 +87,20 @@ export function SurfaceCheck({
   if (!sections.length) return null;
 
   return (
-    <section className="card">
-      <div className="card-head">
-        <h2>Belags-Check</h2>
-        {done > 0 && (
+    <Panel
+      id="surface-check"
+      icon="🔍"
+      title="Belags-Check"
+      badge={open.length > 0 ? open.length : '✓'}
+      summary={open.length ? `${formatKm(total)} mit unsicherem Belag` : 'alles geprüft'}
+      actions={
+        done > 0 && (
           <button className="mini ghost" onClick={() => st().resetCheckedSurfaces()} title="Bestätigungen zurücksetzen">
             {done} geprüft ↺
           </button>
-        )}
-      </div>
+        )
+      }
+    >
       {open.length === 0 ? (
         <p className="muted small">Alle unsicheren Abschnitte geprüft ✓</p>
       ) : (
@@ -166,6 +172,6 @@ export function SurfaceCheck({
           );
         })}
       </ul>
-    </section>
+    </Panel>
   );
 }

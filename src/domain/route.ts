@@ -222,3 +222,52 @@ function pointOnPolyline(line: LngLat[], dist: number[], d: number): { lng: numb
   const l = line[line.length - 1];
   return { lng: l[0], lat: l[1] };
 }
+
+/**
+ * Exaktes Teilstück der Route zwischen den Koordinaten-Indizes i0 und i1 als
+ * eigene Etappe – so bleibt ein Stück beim Umplanen unverändert und braucht
+ * keine neue Server-Anfrage.
+ */
+export function sliceRoute(route: CombinedRoute, i0: number, i1: number): LegResult {
+  const length = route.dist[i1] - route.dist[i0];
+  const total = route.dist[route.dist.length - 1] || 1;
+  const rawGain = (a: number, b: number) => {
+    let g = 0;
+    for (let i = a + 1; i <= b; i++) g += Math.max(0, route.ele[i] - route.ele[i - 1]);
+    return g;
+  };
+  const allGain = rawGain(0, route.ele.length - 1) || 1;
+  const segments: Segment[] = [];
+  for (const s of route.segments) {
+    const from = Math.max(s.from, i0);
+    const to = Math.min(s.to, i1);
+    if (to > from) segments.push({ ...s, from: from - i0, to: to - i0 });
+  }
+  return {
+    coords: route.coords.slice(i0, i1 + 1),
+    ele: route.ele.slice(i0, i1 + 1),
+    segments,
+    length,
+    ascend: (route.ascend * rawGain(i0, i1)) / allGain,
+    time: (route.time * length) / total,
+    hints: route.hints.filter((h) => h.index > i0 && h.index < i1).map((h) => ({ ...h, index: h.index - i0 })),
+  };
+}
+
+/**
+ * Index des Routenpunkts nahe der Distanz d, der mindestens `margin` Meter von
+ * lo und hi entfernt liegt – sonst null (dann lohnt kein Ankerpunkt).
+ */
+export function anchorIndex(route: CombinedRoute, d: number, lo: number, hi: number, margin = 150): number | null {
+  const { dist } = route;
+  if (d - dist[lo] < margin || dist[hi] - d < margin) return null;
+  let a = lo;
+  let b = hi;
+  while (b - a > 1) {
+    const mid = (a + b) >> 1;
+    if (dist[mid] <= d) a = mid;
+    else b = mid;
+  }
+  const i = d - dist[a] <= dist[b] - d ? a : b;
+  return i > lo && i < hi ? i : null;
+}

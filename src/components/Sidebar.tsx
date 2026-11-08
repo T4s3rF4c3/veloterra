@@ -2,17 +2,20 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { formatDuration, formatKm, type LngLat } from '../domain/geo';
 import { downloadRoute } from '../domain/gpx';
 import { breakdown, type CombinedRoute } from '../domain/route';
-import { ROADS, SURFACES, type CategoryInfo } from '../domain/settings';
+import { BIKE_TYPES, PRESETS, ROADS, SURFACES, type CategoryInfo } from '../domain/settings';
 import type { UncertainSection } from '../domain/surfaceCheck';
 import { turnPoints } from '../domain/turns';
-import type { WindForecast } from '../domain/wind';
+import { compassLabel, windAt, type WindForecast } from '../domain/wind';
 import type { Coloring } from '../hooks/useColoring';
 import { useImport } from '../hooks/useImport';
 import type { LegStatus } from '../hooks/useRouting';
-import { useStore } from '../store';
+import { departureTime } from '../hooks/useWind';
+import { useStore, type Mode } from '../store';
 import { ExplorePanel } from './ExplorePanel';
 import { Library } from './Library';
 import { LoopPanel } from './LoopPanel';
+import { NetworkPanel } from './NetworkPanel';
+import { Panel } from './Panel';
 import { ClimbList, StopsList } from './RouteExtras';
 import { SettingsEditor } from './SettingsEditor';
 import { SurfaceCheck } from './SurfaceCheck';
@@ -27,24 +30,32 @@ interface Props {
   fly: (c: LngLat, zoom?: number) => void;
   fit: (c: LngLat[], maxZoom?: number) => void;
   sections: UncertainSection[];
+  bounds: () => [number, number, number, number] | null;
   fitSuggestion: (id: string) => void;
   coloring: Coloring;
   wind: { forecast: WindForecast | null; error: string | null };
   stops: { loading: boolean; error: string | null; partial: boolean };
 }
 
+/** Anteile als Balken; Legende zeigt die drei größten, Rest aufklappbar. */
 function Bar<K extends string>({
   parts,
   cats,
   total,
+  label,
 }: {
   parts: Partial<Record<K, number>>;
   cats: CategoryInfo<K>[];
   total: number;
+  label: string;
 }) {
+  const [all, setAll] = useState(false);
   const items = cats.filter((c) => (parts[c.key] ?? 0) > 0);
+  const sorted = [...items].sort((a, b) => (parts[b.key] ?? 0) - (parts[a.key] ?? 0));
+  const shown = all ? sorted : sorted.slice(0, 3);
   return (
-    <div>
+    <div className="mix-row">
+      <div className="mix-label">{label}</div>
       <div className="bar">
         {items.map((c) => (
           <span
@@ -55,14 +66,17 @@ function Bar<K extends string>({
         ))}
       </div>
       <div className="bar-legend">
-        {items
-          .sort((a, b) => (parts[b.key] ?? 0) - (parts[a.key] ?? 0))
-          .map((c) => (
-            <span key={c.key}>
-              <i style={{ background: c.color }} />
-              {c.label} <b>{formatKm(parts[c.key] ?? 0)}</b>
-            </span>
-          ))}
+        {shown.map((c) => (
+          <span key={c.key}>
+            <i style={{ background: c.color }} />
+            {c.label} <b>{Math.round(((parts[c.key] ?? 0) / total) * 100)} %</b>
+          </span>
+        ))}
+        {sorted.length > 3 && (
+          <button className="link" onClick={() => setAll(!all)}>
+            {all ? 'weniger' : `+${sorted.length - 3}`}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -158,31 +172,52 @@ function Search({ fly }: { fly: Props['fly'] }) {
   );
 }
 
-/** Export-Knöpfe: GPX mit Abbiegehinweisen, TCX für Garmin */
-function ExportButtons({ route, name }: { route: CombinedRoute | null; name: string }) {
+/** Export: ein Knopf, Formate im Menü */
+function ExportMenu({ route, name }: { route: CombinedRoute | null; name: string }) {
   const turns = useMemo(() => (route ? turnPoints(route).length : 0), [route]);
   const label = name.trim() || (route ? `Route ${formatKm(route.length)}` : 'Route');
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    window.addEventListener('pointerdown', onDown);
+    return () => window.removeEventListener('pointerdown', onDown);
+  }, [open]);
+  const run = (f: 'gpx' | 'tcx' | 'gpx-plain') => {
+    if (route) downloadRoute(route, label, f);
+    setOpen(false);
+  };
   return (
-    <div className="export">
-      <button className="primary" disabled={!route} onClick={() => route && downloadRoute(route, label, 'gpx')}>
-        GPX exportieren
+    <div className="export-menu" ref={ref}>
+      <button className="primary" disabled={!route} onClick={() => run('gpx')} title="GPX mit Abbiegehinweisen">
+        ⤓ GPX exportieren
       </button>
       <button
+        className="primary more-btn"
         disabled={!route}
-        onClick={() => route && downloadRoute(route, label, 'tcx')}
-        title="TCX-Kurs mit Abbiegehinweisen – ideal für Garmin Edge"
+        onClick={() => setOpen(!open)}
+        aria-label="Weitere Formate"
+        aria-expanded={open}
       >
-        TCX
+        ▾
       </button>
-      <button
-        className="ghost mini"
-        disabled={!route}
-        onClick={() => route && downloadRoute(route, label, 'gpx-plain')}
-        title="GPX nur mit der Strecke, ohne Abbiegepunkte"
-      >
-        ohne Hinweise
-      </button>
-      {route && turns > 0 && <small className="muted">inkl. {turns} Abbiegehinweise für Garmin, Wahoo & Co.</small>}
+      {open && (
+        <div className="menu" role="menu">
+          <button role="menuitem" onClick={() => run('gpx')}>
+            <b>GPX</b>
+            <small>mit {turns} Abbiegehinweisen – Garmin, Wahoo, Komoot …</small>
+          </button>
+          <button role="menuitem" onClick={() => run('tcx')}>
+            <b>TCX-Kurs</b>
+            <small>Abbiegehinweise als CoursePoints – ideal für Garmin Edge</small>
+          </button>
+          <button role="menuitem" onClick={() => run('gpx-plain')}>
+            <b>GPX ohne Hinweise</b>
+            <small>nur die Strecke</small>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -221,7 +256,8 @@ function ImportButton({ fit }: { fit: (c: LngLat[]) => void }) {
         disabled={busy}
         title="GPX-Datei laden (oder auf die Karte ziehen)"
       >
-        {busy ? 'Importiere …' : '⇪ GPX importieren'}
+        <span aria-hidden>⇪</span>
+        {busy ? 'Lädt …' : 'Import'}
       </button>
       <input
         ref={input}
@@ -239,6 +275,13 @@ function ImportButton({ fit }: { fit: (c: LngLat[]) => void }) {
   );
 }
 
+const MODE_TABS: { value: Mode; icon: string; label: string; hint: string }[] = [
+  { value: 'route', icon: '🧭', label: 'Route', hint: 'Route planen und bearbeiten' },
+  { value: 'loop', icon: '↺', label: 'Rundtour', hint: 'Rundtouren vorschlagen lassen' },
+  { value: 'explore', icon: '📍', label: 'Ziele', hint: 'Ausflugsziele in der Umgebung' },
+  { value: 'network', icon: '🚲', label: 'Radwege', hint: 'Beschilderte Rad- und MTB-Routen' },
+];
+
 export function Sidebar({
   route,
   legs,
@@ -248,6 +291,7 @@ export function Sidebar({
   fly,
   fit,
   sections,
+  bounds,
   fitSuggestion,
   coloring,
   wind,
@@ -262,6 +306,7 @@ export function Sidebar({
   const showStops = useStore((s) => s.showStops);
   const importTrack = useStore((s) => s.importTrack);
   const routeName = useStore((s) => s.routeName);
+  const departure = departureTime(useStore((s) => s.departure));
   const st = useStore.getState;
 
   const total = route ? route.dist[route.dist.length - 1] : 0;
@@ -272,41 +317,54 @@ export function Sidebar({
     (l) => overrides[l.key] && (!isImport(l.key) || overrides[l.key].avoid?.length || overrides[l.key].alternative),
   );
   const importLegs = legs.filter((l) => isImport(l.key));
+  const bike = BIKE_TYPES.find((b) => b.key === (settings.bike ?? 'road'))!;
+  const preset = PRESETS.find((p) => p.id === presetId);
+  const w = wind.forecast ? windAt(wind.forecast, departure) : null;
 
   return (
     <aside className="sidebar">
       <header className="brand">
-        <span className="logo">◐</span>
+        <img className="logo" src="/icon.svg" alt="" />
         <div>
           <h1>Veloterra</h1>
-          <p>Routen nach Belag & Straßenart – Rennrad, Gravel, MTB</p>
+          <p>Routen nach Belag & Straßenart</p>
         </div>
       </header>
 
-      <div className="choice tabs">
-        <button className={mode === 'route' ? 'on' : ''} onClick={() => st().setMode('route')}>
-          Route planen
-        </button>
-        <button className={mode === 'loop' ? 'on' : ''} onClick={() => st().setMode('loop')}>
-          Rundtour
-        </button>
-        <button className={mode === 'explore' ? 'on' : ''} onClick={() => st().setMode('explore')}>
-          Ziele
-        </button>
-      </div>
+      <nav className="mode-tabs" aria-label="Modus">
+        {MODE_TABS.map((t) => (
+          <button
+            key={t.value}
+            className={mode === t.value ? 'on' : ''}
+            onClick={() => st().setMode(t.value)}
+            title={t.hint}
+            aria-current={mode === t.value}
+          >
+            <span aria-hidden>{t.icon}</span>
+            {t.label}
+          </button>
+        ))}
+      </nav>
 
-      <Search fly={fly} />
+      {mode !== 'network' && <Search fly={fly} />}
 
       {mode === 'loop' && <LoopPanel onFit={fitSuggestion} wind={wind} />}
       {mode === 'explore' && <ExplorePanel fly={fly} fit={fit} />}
+      {mode === 'network' && <NetworkPanel bounds={bounds} fit={fit} />}
 
       {mode === 'route' && (
-        <section className="card">
+        <section className="card summary">
           {waypoints.length < 2 ? (
-            <p className="muted">
-              Klicke auf die Karte, um <b>Start</b> und <b>Ziel</b> zu setzen. Weitere Klicks fügen Etappen hinzu. Oder
-              eine Tour aus Komoot, Strava & Co. als GPX importieren.
-            </p>
+            <div className="empty">
+              <p>
+                <b>Auf die Karte klicken</b>, um Start und Ziel zu setzen – jeder weitere Klick fügt einen Zwischenpunkt
+                hinzu.
+              </p>
+              <p className="muted small">
+                Oder eine Tour aus Komoot & Co. importieren, eine Rundtour vorschlagen lassen oder einer beschilderten
+                Radroute folgen.
+              </p>
+            </div>
           ) : (
             <>
               <div className="stats">
@@ -320,7 +378,7 @@ export function Sidebar({
                 </div>
                 <div>
                   <b>{route ? formatDuration(route.time) : '–'}</b>
-                  <small>Fahrzeit ca.</small>
+                  <small>Fahrzeit</small>
                 </div>
                 {loading && <span className="spinner" title="Route wird berechnet" />}
               </div>
@@ -335,21 +393,16 @@ export function Sidebar({
                 </div>
               )}
               {parts && total > 0 && (
-                <>
-                  <h3>Untergrund</h3>
-                  <Bar parts={parts.surface} cats={SURFACES} total={total} />
-                  <h3>Straßenart</h3>
-                  <Bar parts={parts.road} cats={ROADS} total={total} />
-                </>
+                <div className="mix">
+                  <Bar parts={parts.surface} cats={SURFACES} total={total} label="Untergrund" />
+                  <Bar parts={parts.road} cats={ROADS} total={total} label="Straßenart" />
+                </div>
               )}
               {importLegs.length > 0 && (
                 <div className="import-note">
                   <span>
                     <b>Importiert{importTrack ? `: ${importTrack.name}` : ''}</b>
-                    <small>
-                      Folgt dem Original{importTrack ? ' (lila gestrichelt)' : ''}. Verschobene Punkte werden ohne
-                      Vorlieben geroutet.
-                    </small>
+                    <small>Folgt dem Original{importTrack ? ' (lila gestrichelt)' : ''}.</small>
                   </span>
                   <button
                     className="mini"
@@ -360,20 +413,14 @@ export function Sidebar({
                   </button>
                 </div>
               )}
-              {route && (
-                <>
-                  <h3>Wind</h3>
-                  <WindCard forecast={wind.forecast} error={wind.error} summary={coloring.wind} />
-                </>
-              )}
             </>
           )}
-          <div className="actions">
-            <button onClick={() => st().closeLoop()} disabled={waypoints.length < 2} title="Zurück zum Start">
-              ↺ Rundtour
+          <div className="toolbar">
+            <button onClick={() => st().closeLoop()} disabled={waypoints.length < 2} title="Zurück zum Start fahren">
+              <span aria-hidden>↺</span>Zum Start
             </button>
-            <button onClick={() => st().reverse()} disabled={waypoints.length < 2}>
-              ⇅ Umkehren
+            <button onClick={() => st().reverse()} disabled={waypoints.length < 2} title="Richtung umkehren">
+              <span aria-hidden>⇅</span>Umkehren
             </button>
             <button
               onClick={() => {
@@ -381,28 +428,49 @@ export function Sidebar({
                 if (wp.length) st().removeWaypoint(wp[wp.length - 1].id);
               }}
               disabled={!waypoints.length}
+              title="Letzten Wegpunkt entfernen"
             >
-              ↶ Letzten Punkt
+              <span aria-hidden>⌫</span>Letzter
             </button>
-            <button onClick={() => st().clearRoute()} disabled={!waypoints.length}>
-              Leeren
+            <button onClick={() => st().clearRoute()} disabled={!waypoints.length} title="Route leeren">
+              <span aria-hidden>✕</span>Leeren
             </button>
             <ImportButton fit={fit} />
           </div>
-          {waypoints.length >= 2 && <ExportButtons route={route} name={routeName} />}
+          {waypoints.length >= 2 && <ExportMenu route={route} name={routeName} />}
         </section>
       )}
 
+      {mode === 'route' && route && (
+        <Panel
+          id="wind"
+          icon="🌬️"
+          title="Wind"
+          summary={
+            w
+              ? `${Math.round(w.speed)} km/h aus ${compassLabel(w.from)}` +
+                (coloring.wind && w.speed >= 3 ? ` · ${Math.round(coloring.wind.head * 100)} % Gegenwind` : '')
+              : 'Vorhersage für die Abfahrtszeit'
+          }
+        >
+          <WindCard forecast={wind.forecast} error={wind.error} summary={coloring.wind} />
+        </Panel>
+      )}
       {mode === 'route' && route && <SurfaceCheck route={route} sections={sections} fit={fit} />}
       {mode === 'route' && route && <ClimbList climbs={coloring.climbs} route={route} fit={fit} />}
       {mode === 'route' && route && showStops && (
         <StopsList loading={stops.loading} error={stops.error} partial={stops.partial} fly={fly} />
       )}
-      {mode === 'route' && <Library route={route} fit={fit} />}
 
       {mode === 'route' && overrideLegs.length > 0 && (
-        <section className="card">
-          <h2>Angepasste Etappen</h2>
+        <Panel
+          id="overrides"
+          icon="✎"
+          title="Angepasste Etappen"
+          badge={overrideLegs.length}
+          summary="umgangen, anders geplant, Alternativen"
+          defaultOpen
+        >
           <ul className="list">
             {overrideLegs.map((l) => {
               const o = overrides[l.key];
@@ -439,17 +507,23 @@ export function Sidebar({
               );
             })}
           </ul>
-        </section>
+        </Panel>
       )}
 
-      <section className="card">
-        <h2>Routing-Profil</h2>
+      {mode === 'route' && <Library route={route} fit={fit} />}
+
+      <Panel
+        id="profile"
+        icon={bike.icon}
+        title="Routing-Profil"
+        summary={`${bike.label}${preset ? ` · ${preset.label}` : ' · eigene Einstellungen'}`}
+        defaultOpen={mode !== 'route'}
+      >
         <SettingsEditor settings={settings} presetId={presetId} onChange={(s, id) => st().setSettings(s, id)} />
-      </section>
+      </Panel>
 
       {blocks.length > 0 && (
-        <section className="card">
-          <h2>Immer meiden</h2>
+        <Panel id="blocks" icon="⛔" title="Immer meiden" badge={blocks.length} summary="gesperrte Abschnitte">
           <ul className="list">
             {blocks.map((b) => (
               <li key={b.id}>
@@ -465,11 +539,11 @@ export function Sidebar({
               </li>
             ))}
           </ul>
-        </section>
+        </Panel>
       )}
 
       <footer className="foot">
-        Routing:{' '}
+        Routing{' '}
         <a href="https://brouter.de" target="_blank" rel="noreferrer">
           BRouter
         </a>{' '}
@@ -480,6 +554,10 @@ export function Sidebar({
         · Karte{' '}
         <a href="https://openfreemap.org" target="_blank" rel="noreferrer">
           OpenFreeMap
+        </a>{' '}
+        · Radrouten{' '}
+        <a href="https://waymarkedtrails.org" target="_blank" rel="noreferrer">
+          Waymarked Trails
         </a>
       </footer>
     </aside>

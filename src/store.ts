@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import type { LngLat } from './domain/geo';
 import { legKey, type Block, type LegOverride, type LegResult, type Waypoint } from './domain/route';
 import type { Photo } from './api/photos';
+import type { NetworkGroup, NetworkKind, NetRoute } from './api/waymarked';
 import type { DestinationSort, Poi } from './domain/poi';
 import type { Direction, Ranking } from './domain/roundtrip';
 import { DEFAULT_SETTINGS, cloneSettings, type RoutingSettings } from './domain/settings';
@@ -16,7 +17,7 @@ export interface Selection {
   end: number | null;
 }
 
-export type Mode = 'route' | 'loop' | 'explore';
+export type Mode = 'route' | 'loop' | 'explore' | 'network';
 
 export interface LoopOptions {
   distance: number;
@@ -69,6 +70,11 @@ interface State {
   exploreOptions: ExploreOptions;
   /** Stopps (Café, Wasser …) entlang der Route anzeigen */
   showStops: boolean;
+  /** Netz beschilderter Radrouten als Kartenebene */
+  netOverlay: 'off' | NetworkKind;
+  /** Radwege-Modus: Rad- oder MTB-Routen, welche Ebenen */
+  networkKind: NetworkKind;
+  networkGroups: NetworkGroup[];
   stopCategories: string[];
   showPhotos: boolean;
   mapillaryToken: string;
@@ -91,6 +97,10 @@ interface State {
   activePhoto: string | null;
   /** gerade geprüfter unsicherer Abschnitt */
   activeCheck: string | null;
+  networkRoutes: NetRoute[];
+  /** gewählte bzw. hervorgehobene Radroute und ihr Verlauf */
+  activeNetwork: number | null;
+  networkLines: LngLat[][];
   suggestions: Suggestion[];
   /** hervorgehobener Vorschlag (Hover/Auswahl) */
   activeSuggestion: string | null;
@@ -140,6 +150,11 @@ interface State {
   setActivePhoto: (id: string | null) => void;
   setRouteName: (n: string) => void;
   markSurfaceOk: (id: string) => void;
+  setNetOverlay: (o: State['netOverlay']) => void;
+  setNetworkKind: (k: NetworkKind) => void;
+  setNetworkGroups: (g: NetworkGroup[]) => void;
+  setNetworkRoutes: (r: NetRoute[]) => void;
+  setActiveNetwork: (id: number | null, lines?: LngLat[][]) => void;
   resetCheckedSurfaces: () => void;
   setActiveCheck: (id: string | null) => void;
   /** aktuelle Route in der Bibliothek speichern (überschreibt, wenn schon gespeichert) */
@@ -177,6 +192,12 @@ export const useStore = create<State>()(
         sort: 'interest',
       },
       showStops: false,
+      netOverlay: 'off',
+      networkKind: 'cycling',
+      networkGroups: ['INT', 'NAT', 'REG', 'LOC'],
+      networkRoutes: [],
+      activeNetwork: null,
+      networkLines: [],
       stopCategories: ['cafe', 'water', 'bike'],
       showPhotos: false,
       mapillaryToken: '',
@@ -312,6 +333,11 @@ export const useStore = create<State>()(
       markSurfaceOk: (id) =>
         set((s) => ({ checkedSurfaces: [...s.checkedSurfaces.filter((x) => x !== id), id].slice(-500) })),
       resetCheckedSurfaces: () => set({ checkedSurfaces: [] }),
+      setNetOverlay: (netOverlay) => set({ netOverlay }),
+      setNetworkKind: (networkKind) => set({ networkKind, networkRoutes: [], activeNetwork: null, networkLines: [] }),
+      setNetworkGroups: (networkGroups) => set({ networkGroups }),
+      setNetworkRoutes: (networkRoutes) => set({ networkRoutes }),
+      setActiveNetwork: (activeNetwork, networkLines = []) => set({ activeNetwork, networkLines }),
       setActiveCheck: (activeCheck) => set({ activeCheck }),
       saveRoute: (stats, asNew = false) =>
         set((s) => {
@@ -373,6 +399,9 @@ export const useStore = create<State>()(
         loopOptions: s.loopOptions,
         exploreOptions: s.exploreOptions,
         showStops: s.showStops,
+        netOverlay: s.netOverlay,
+        networkKind: s.networkKind,
+        networkGroups: s.networkGroups,
         stopCategories: s.stopCategories,
         showPhotos: s.showPhotos,
         mapillaryToken: s.mapillaryToken,

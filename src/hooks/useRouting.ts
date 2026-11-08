@@ -96,14 +96,15 @@ export function useRouting() {
   }, [waypoints, settings, overrides, blocks]);
 
   useEffect(() => {
-    const ctrl = new AbortController();
-    // kurz warten, damit schnelles Klicken/Schieben nicht jede Zwischenstufe anfragt
+    // kurz warten, damit schnelles Klicken/Schieben nicht jede Zwischenstufe anfragt.
+    // Laufende Anfragen werden nicht abgebrochen: Ihr Ergebnis landet im Cache,
+    // und eine abgebrochene Anfrage würde sonst nie neu gestellt.
     const t = setTimeout(() => {
       for (const { rk, req } of requests) {
         if (cache.has(rk) || pending.current.has(rk) || errors.current.has(rk)) continue;
         pending.current.add(rk);
         setTick((n) => n + 1);
-        routeLeg(req, ctrl.signal)
+        routeLeg(req)
           .then((r) => cache.set(rk, r))
           .catch((e: Error) => {
             if (e.name !== 'AbortError') errors.current.set(rk, e.message);
@@ -114,10 +115,7 @@ export function useRouting() {
           });
       }
     }, 300);
-    return () => {
-      clearTimeout(t);
-      ctrl.abort();
-    };
+    return () => clearTimeout(t);
   }, [requests, retryToken]);
 
   const readyKey = requests.map((r) => (cache.has(r.rk) ? r.rk : '-')).join('|');

@@ -15,32 +15,46 @@ Dann <http://localhost:5173> öffnen.
 
 ## Bedienung
 
+Oben links auf der Karte: **↶ ↷** (Rückgängig/Wiederholen), **Ebenen** (Kartenstil, Einfärbung, Stopps, Fotos, Radrouten-Netz) und **Route ausblenden**. In der Seitenleiste lassen sich alle Bereiche (Wind, Belags-Check, Anstiege, Meine Routen, Routing-Profil …) auf- und zuklappen; der Browser merkt sich, was offen ist.
+
 | Aktion | So geht's |
 |---|---|
 | Start / Ziel / Etappen | Auf die Karte klicken |
 | Wegpunkt verschieben | Marker ziehen |
 | Wegpunkt löschen | Doppelklick oder Rechtsklick auf Marker |
 | Wegpunkt in Route einfügen | Auf die Route klicken → „Wegpunkt einfügen“ |
+| **Route umleiten** | Route mit der Maus packen und auf eine andere Straße ziehen – dort entsteht ein neuer Wegpunkt. Davor und dahinter setzt die App automatisch Ankerpunkte auf die bisherige Route: Nur das Stück dazwischen wird neu geplant, der Rest bleibt exakt gleich (auch beim Verschieben von Wegpunkten und beim Umfahren) |
+| **Was ist das für ein Weg?** | Maus über die Route halten: Belag, Straßenart, Wegeklasse/Fahrbahn, Steigung und Länge des Stücks |
+| **Stück umfahren** | Rechtsklick auf die Route → „Dieses Stück umfahren“ (das ganze Stück gleicher Art, z. B. 850 m Schotter-Wirtschaftsweg), „Stück markieren“, „Stück immer meiden“ oder die Art (z. B. Schotter) generell meiden |
 | Abschnitt markieren | Auf die Route klicken → „Abschnitt ab hier markieren“ → Ende anklicken, **oder** im Höhenprofil ziehen |
 | Abschnitt **umgehen** | Sperrt den Abschnitt für die betroffene Etappe und rechnet sie neu |
 | Abschnitt **anders planen** | Setzt Wegpunkte an Anfang/Ende und gibt dem Teil eigene Einstellungen (z. B. „hier Schotter ok“) |
 | **Alternative** | Schaltet für die Etappe durch bis zu 4 BRouter-Alternativen |
 | **Immer meiden** | Speichert den Abschnitt dauerhaft als Sperre für alle Routen |
-| Luftbild | Oben „Satellit“ (Esri, weltweit) oder **„Luftbild DE“** (amtliche Luftbilder 20–40 cm für RLP, NRW, Hessen, Bayern – schärfer und aktueller) wählen, oder auf die Route klicken → „Im Luftbild ansehen“ |
-| Einfärbung | Oben: Untergrund · Straßenart · **Steigung** · **Wind** (Gegen-/Rückenwind zur Abfahrtszeit) · Einfarbig |
+| Luftbild | Ebenen → „Satellit“ (Esri, weltweit) oder **„Luftbild DE“** (amtliche Luftbilder 20–40 cm für RLP, NRW, Hessen, Bayern – schärfer und aktueller) wählen, oder auf die Route klicken → „Im Luftbild ansehen“ |
+| Einfärbung | Ebenen → Untergrund · Straßenart · **Steigung** · **Wind** (Gegen-/Rückenwind zur Abfahrtszeit) · Einfarbig |
 | Anstiege | Liste in der Seitenleiste (Länge, Ø- und Max-Steigung, Höhenmeter); Klick markiert den Anstieg. Im Höhenprofil rot hinterlegt |
 | Wind | Abfahrtszeit wählen → Windrichtung/-stärke, Anteil Gegen-/Rückenwind, Hinweis „heimwärts Rückenwind“ |
 | Belags-Check | Karte „Belags-Check“: Abschnitte, deren Belag in OSM fehlt oder nur geschätzt ist (Wirtschafts-, Rad- und Feldwege ohne `surface`), auf der Karte weiß gepunktet. Klick → Luftbild DE, Route ausgeblendet, Straßenfoto falls vorhanden. „✓ Passt“ blendet den Abschnitt dauerhaft aus, „⤳ Umgehen“ plant drumherum, „In OpenStreetMap eintragen“ öffnet den Editor an der Stelle |
-| Stopps unterwegs | Oben „☕ Stopps“: Cafés & Bäcker, Trinkwasser, Rad-Service, Aussichtspunkte, WC bis 300 m neben der Route – mit km-Angabe; „Als Wegpunkt einfügen“ |
-| Fotos der Strecke | Oben „📷 Fotos“: Straßenfotos entlang der Route (Panoramax; mit eigenem Mapillary-Token deutlich mehr), Großansicht mit ← → |
+| Stopps unterwegs | Ebenen → „☕ Stopps unterwegs“: Cafés & Bäcker, Trinkwasser, Rad-Service, Aussichtspunkte, WC bis 300 m neben der Route – mit km-Angabe; „Als Wegpunkt einfügen“ |
+| Fotos der Strecke | Ebenen → „📷 Fotos der Strecke“: Straßenfotos entlang der Route (Panoramax; mit eigenem Mapillary-Token deutlich mehr), Großansicht mit ← → |
 | Route kurz ausblenden | Taste **H** oder „Route ausblenden“ – um die Straße darunter zu sehen |
 | Fotos der Strecke | Auf die Route klicken → „Google Street View“ (Blick in Fahrtrichtung), „Straßenfotos (Mapillary)“ oder „In Komoot öffnen“ (Highlights mit Fotos) – jeweils in neuem Tab |
 | Rückgängig | ↶ ↷ oben links oder **⌘/Strg+Z**, Wiederholen mit **⌘⇧Z / Strg+Y** – für Wegpunkte, Umgehen, Anders planen, Sperren, Einstellungen, Import, Leeren (letzte 50 Schritte). Nach „Leeren“ oder dem Ersetzen der Route erscheint kurz ein Hinweis mit „Rückgängig“ |
-| Export | **GPX** mit Abbiegehinweisen (Wegpunkte „Rechts abbiegen“ …) · **TCX** mit CoursePoints für Garmin Edge · GPX „ohne Hinweise“ |
+| Export | „GPX exportieren“ bzw. ▾ für weitere Formate: **GPX** mit Abbiegehinweisen (Wegpunkte „Rechts abbiegen“ …) · **TCX** mit CoursePoints für Garmin Edge · GPX „ohne Hinweise“ |
 | Import | „GPX importieren“ oder Datei auf die Karte ziehen (z. B. Komoot-/Strava-Export). Der Track wird mit dichten Stützpunkten nachgerechnet, damit Belag und Straßenart bekannt sind, und bleibt bis zur Bearbeitung exakt. „Mit meinem Profil planen“ rechnet ihn nach deinen Einstellungen neu |
 | Meine Routen | Route benennen und speichern, später laden, umbenennen, löschen (inkl. berechneter Etappen) |
 
 Alles (Route, Einstellungen, Sperren, gespeicherte Routen, berechnete Etappen) wird im Browser gespeichert – nach dem Neuladen ist die Route ohne neue Server-Anfrage da.
+
+## Radwege
+
+Im Tab **„Radwege“** zeigt die Karte das Netz beschilderter Routen (Daten: [Waymarked Trails](https://waymarkedtrails.org) / OpenStreetMap) – umschaltbar zwischen **Radrouten** und **MTB-Routen**. Die Liste folgt dem Kartenausschnitt und lässt sich nach Ebene filtern (International, National, Regional, Lokal); ein Klick auf eine Route auf der Karte oder in der Liste zeigt Verlauf, Beschreibung und Links.
+
+- **Sichtbaren Abschnitt übernehmen**: nur das Stück im Kartenausschnitt wird zur bearbeitbaren Route.
+- **Ganze Route**: der komplette Verlauf.
+
+Übernommene Routen werden wie ein GPX-Import nachgerechnet (Belag und Straßenart bekannt, folgt dem Original). Das Netz lässt sich auch in den anderen Modi über **Ebenen** einblenden.
 
 ## Ziele entdecken
 
