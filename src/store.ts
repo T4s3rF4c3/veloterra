@@ -8,7 +8,7 @@ import type { DestinationSort, Poi } from './domain/poi';
 import type { Direction, Ranking } from './domain/roundtrip';
 import { DEFAULT_SETTINGS, cloneSettings, type RoutingSettings } from './domain/settings';
 
-export type ColorMode = 'surface' | 'road' | 'grade' | 'wind' | 'plain';
+export type ColorMode = 'surface' | 'road' | 'grade' | 'wind' | 'novelty' | 'plain';
 export type Basemap = 'light' | 'standard' | 'satellite' | 'aerial';
 
 /** Auswahl eines Routenabschnitts in Metern ab Start. */
@@ -72,6 +72,16 @@ interface State {
   showStops: boolean;
   /** Netz beschilderter Radrouten als Kartenebene */
   netOverlay: 'off' | NetworkKind;
+  /** öffentliche GPS-Spuren von OpenStreetMap als Kartenebene */
+  showGpsTraces: boolean;
+  /** GPS-Spuren als Linien (Kacheln) oder als Dichte-Heatmap */
+  gpsMode: 'lines' | 'density';
+  /** Dichte: alle Rad-Spuren oder nur Rennrad-Tempo ('all' aus älteren Versionen = Rad) */
+  gpsFilter: 'all' | 'bike' | 'fast';
+  /** nur Wege zeigen, die mehrere Spuren berühren */
+  gpsMulti: boolean;
+  /** eigene Heatmap (importierte Fahrten) anzeigen */
+  showMyHeat: boolean;
   /** Radwege-Modus: Rad- oder MTB-Routen, welche Ebenen */
   networkKind: NetworkKind;
   networkGroups: NetworkGroup[];
@@ -151,6 +161,11 @@ interface State {
   setRouteName: (n: string) => void;
   markSurfaceOk: (id: string) => void;
   setNetOverlay: (o: State['netOverlay']) => void;
+  setShowGpsTraces: (v: boolean) => void;
+  setGpsMode: (m: State['gpsMode']) => void;
+  setGpsFilter: (f: State['gpsFilter']) => void;
+  setGpsMulti: (v: boolean) => void;
+  setShowMyHeat: (v: boolean) => void;
   setNetworkKind: (k: NetworkKind) => void;
   setNetworkGroups: (g: NetworkGroup[]) => void;
   setNetworkRoutes: (r: NetRoute[]) => void;
@@ -193,6 +208,11 @@ export const useStore = create<State>()(
       },
       showStops: false,
       netOverlay: 'off',
+      showGpsTraces: false,
+      gpsMode: 'density',
+      gpsFilter: 'bike',
+      gpsMulti: false,
+      showMyHeat: true,
       networkKind: 'cycling',
       networkGroups: ['INT', 'NAT', 'REG', 'LOC'],
       networkRoutes: [],
@@ -334,6 +354,11 @@ export const useStore = create<State>()(
         set((s) => ({ checkedSurfaces: [...s.checkedSurfaces.filter((x) => x !== id), id].slice(-500) })),
       resetCheckedSurfaces: () => set({ checkedSurfaces: [] }),
       setNetOverlay: (netOverlay) => set({ netOverlay }),
+      setShowGpsTraces: (showGpsTraces) => set({ showGpsTraces }),
+      setGpsMode: (gpsMode) => set({ gpsMode }),
+      setGpsFilter: (gpsFilter) => set({ gpsFilter }),
+      setGpsMulti: (gpsMulti) => set({ gpsMulti }),
+      setShowMyHeat: (showMyHeat) => set({ showMyHeat }),
       setNetworkKind: (networkKind) => set({ networkKind, networkRoutes: [], activeNetwork: null, networkLines: [] }),
       setNetworkGroups: (networkGroups) => set({ networkGroups }),
       setNetworkRoutes: (networkRoutes) => set({ networkRoutes }),
@@ -400,6 +425,11 @@ export const useStore = create<State>()(
         exploreOptions: s.exploreOptions,
         showStops: s.showStops,
         netOverlay: s.netOverlay,
+        showGpsTraces: s.showGpsTraces,
+        gpsMode: s.gpsMode,
+        gpsFilter: s.gpsFilter,
+        gpsMulti: s.gpsMulti,
+        showMyHeat: s.showMyHeat,
         networkKind: s.networkKind,
         networkGroups: s.networkGroups,
         stopCategories: s.stopCategories,

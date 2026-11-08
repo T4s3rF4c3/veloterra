@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { useHeat } from '../api/heatStore';
+import { GpsTracesOptions } from './GpsTraces';
 import { redo, undo, useHistory } from '../history';
 import { useStore, type Basemap, type ColorMode } from '../store';
 
@@ -14,6 +16,7 @@ const COLOR_MODES: { value: ColorMode; label: string }[] = [
   { value: 'road', label: 'Straßenart' },
   { value: 'grade', label: 'Steigung' },
   { value: 'wind', label: 'Wind' },
+  { value: 'novelty', label: 'Neu für mich' },
   { value: 'plain', label: 'Einfarbig' },
 ];
 
@@ -33,7 +36,13 @@ function Toggle({ on, onChange, label, hint }: { on: boolean; onChange: () => vo
  * Kartenleiste: Rückgängig, ein „Ebenen“-Menü für Kartenstil, Einfärbung und
  * Einblendungen, und Route ein-/ausblenden. Hält die Karte frei von Knöpfen.
  */
-export function MapToolbar({ hasRoute }: { hasRoute: boolean }) {
+export function MapToolbar({
+  hasRoute,
+  bounds,
+}: {
+  hasRoute: boolean;
+  bounds: () => [number, number, number, number] | null;
+}) {
   const canUndo = useHistory((s) => s.canUndo);
   const canRedo = useHistory((s) => s.canRedo);
   const mode = useStore((s) => s.mode);
@@ -43,6 +52,9 @@ export function MapToolbar({ hasRoute }: { hasRoute: boolean }) {
   const showStops = useStore((s) => s.showStops);
   const showPhotos = useStore((s) => s.showPhotos);
   const netOverlay = useStore((s) => s.netOverlay);
+  const showGpsTraces = useStore((s) => s.showGpsTraces);
+  const showMyHeat = useStore((s) => s.showMyHeat);
+  const heatCount = useHeat((s) => s.tracks.length);
   const st = useStore.getState;
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -108,7 +120,7 @@ export function MapToolbar({ hasRoute }: { hasRoute: boolean }) {
               <>
                 <h4>Route einfärben nach</h4>
                 <div className="choice wrap">
-                  {COLOR_MODES.map((m) => (
+                  {COLOR_MODES.filter((m) => m.value !== 'novelty' || heatCount > 0).map((m) => (
                     <button
                       key={m.value}
                       className={colorMode === m.value ? 'on' : ''}
@@ -155,6 +167,19 @@ export function MapToolbar({ hasRoute }: { hasRoute: boolean }) {
               </>
             )}
             {mode === 'network' && <p className="muted small">Im Tab „Radwege“ ist das Routennetz immer sichtbar.</p>}
+            <Toggle
+              on={showMyHeat && heatCount > 0}
+              onChange={() => heatCount > 0 && st().setShowMyHeat(!showMyHeat)}
+              label="🔥 Meine Fahrten"
+              hint={heatCount ? `${heatCount} importierte Fahrten` : 'Erst unter „Meine Heatmap“ importieren'}
+            />
+            <Toggle
+              on={showGpsTraces}
+              onChange={() => st().setShowGpsTraces(!showGpsTraces)}
+              label="🗺️ Öffentliche GPS-Spuren"
+              hint="Hochgeladene Tracks aus OpenStreetMap – zeigt, wo viel gefahren wird"
+            />
+            {showGpsTraces && <GpsTracesOptions bounds={bounds} />}
           </div>
         )}
       </div>

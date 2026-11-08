@@ -9,6 +9,7 @@ import {
   type Ranking,
 } from '../domain/roundtrip';
 import { summarizeWind, windAlong, type WindForecast } from '../domain/wind';
+import { useHeat } from '../api/heatStore';
 import { useRoundTrip } from '../hooks/useRoundTrip';
 import { departureTime } from '../hooks/useWind';
 import { useStore } from '../store';
@@ -22,6 +23,7 @@ const RANKINGS: { value: Ranking; label: string }[] = [
   { value: 'flat', label: 'Flach' },
   { value: 'hilly', label: 'Hügelig' },
   { value: 'wind', label: 'Rückenwind heim' },
+  { value: 'novel', label: 'Neue Straßen' },
 ];
 
 function ScoreBadge({ score }: { score: number }) {
@@ -45,6 +47,7 @@ export function LoopPanel({
   const suggestions = useStore((s) => s.suggestions);
   const active = useStore((s) => s.activeSuggestion);
   const settings = useStore((s) => s.settings);
+  const heat = useHeat((s) => s.index);
   // bei Gravel/MTB interessiert der Anteil unbefestigt, sonst der Asphalt
   const offroad = settings.bike === 'gravel' || settings.bike === 'mtb';
   const departure = departureTime(useStore((s) => s.departure));
@@ -63,11 +66,12 @@ export function LoopPanel({
             const sum = summarizeWind(dist, w.hw, w.speed);
             stats.windGain = sum.firstHalf - sum.secondHalf;
           }
+          if (heat && heat.size) stats.novelty = heat.novelty(s.leg.coords);
           return { ...s, color: SUGGESTION_COLORS[i % SUGGESTION_COLORS.length], stats };
         }),
         options.ranking,
       ),
-    [suggestions, settings, options.distance, options.ranking, wind.forecast, departure],
+    [suggestions, settings, options.distance, options.ranking, wind.forecast, departure, heat],
   );
 
   // Karte auf alle Vorschläge ausrichten, sobald neue eintreffen
@@ -203,6 +207,11 @@ export function LoopPanel({
                   )}
                   <span>Richtung {DIRECTIONS[Math.round(s.direction / 45) % 8].label}</span>
                   {s.stats.overlap > 0.08 && <span className="warn">{Math.round(s.stats.overlap * 100)}% doppelt</span>}
+                  {s.stats.novelty !== undefined && (
+                    <span className={s.stats.novelty >= 0.5 ? 'good-tag' : ''}>
+                      {Math.round(s.stats.novelty * 100)} % neu
+                    </span>
+                  )}
                   {s.stats.windGain !== undefined && s.stats.windGain > 3 && (
                     <span className="good-tag">Rückenwind heim</span>
                   )}

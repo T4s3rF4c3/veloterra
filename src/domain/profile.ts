@@ -68,7 +68,16 @@ const FAST_SPEEDS = {
  * ist von dort übernommen, die Kosten werden aus Straßen- × Belagsfaktor
  * berechnet.
  */
-export function generateProfile(s: RoutingSettings): string {
+export interface ProfileOptions {
+  /**
+   * Rundtour: BRouters Korrektur für schlecht liegende Hilfspunkte einschalten –
+   * sonst fährt die Runde an Sackgassen hin und auf demselben Weg zurück.
+   * Maximaler Umweg für die Korrektur in Metern (0 = ohne Grenze).
+   */
+  roundTrip?: { correctDistance: number };
+}
+
+export function generateProfile(s: RoutingSettings, opts: ProfileOptions = {}): string {
   const sf = (k: keyof RoutingSettings['surface']) => num(PREF_FACTOR[s.surface[k]]);
   const rf = (k: keyof RoutingSettings['road']) => num(PREF_FACTOR[s.road[k]]);
   const hills = HILLS[s.hills];
@@ -134,7 +143,14 @@ assign turnInstructionMode          = 1
 assign turnInstructionCatchingRange = 40
 assign turnInstructionRoundabouts   = true
 assign considerTurnRestrictions     = true
-assign processUnusedTags            = false
+assign processUnusedTags            = false${
+    opts.roundTrip
+      ? `
+
+assign correctMisplacedViaPoints         = true
+assign correctMisplacedViaPointsDistance = ${opts.roundTrip.correctDistance}`
+      : ''
+  }
 
 ---context:way
 

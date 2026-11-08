@@ -9,7 +9,7 @@ export const LENGTH_PER_RADIUS = 5.5;
 export const SUGGESTION_COLORS = ['#2563eb', '#db2777', '#16a34a', '#ea580c', '#7c3aed', '#0891b2'];
 
 export type Direction = number | 'any';
-export type Ranking = 'quality' | 'flat' | 'hilly' | 'wind';
+export type Ranking = 'quality' | 'flat' | 'hilly' | 'wind' | 'novel';
 
 export const DIRECTIONS: { label: string; deg: number }[] = [
   { label: 'N', deg: 0 },
@@ -47,6 +47,8 @@ export interface RoundTripStats {
   score: number;
   /** km/h: um so viel weniger Gegenwind auf der zweiten Hälfte (positiv = Rückenwind heimwärts) */
   windGain?: number;
+  /** 0..1 – Anteil, den man laut eigener Heatmap noch nie gefahren ist */
+  novelty?: number;
 }
 
 function segLen(dist: number[], s: Segment) {
@@ -110,6 +112,7 @@ export function sortSuggestions<T extends { stats: RoundTripStats }>(list: T[], 
     if (ranking === 'flat') return perKm(a.stats) - perKm(b.stats);
     if (ranking === 'hilly') return perKm(b.stats) - perKm(a.stats);
     if (ranking === 'wind') return (b.stats.windGain ?? 0) - (a.stats.windGain ?? 0);
+    if (ranking === 'novel') return (b.stats.novelty ?? 0) - (a.stats.novelty ?? 0);
     return b.stats.score - a.stats.score;
   });
 }
@@ -178,4 +181,134 @@ export function splitIntoLegs(leg: LegResult, n: number): { points: LngLat[]; le
 /** Anzahl Etappen für eine Rundtour: etwa alle 10 km ein Wegpunkt. */
 export function legCountFor(length: number): number {
   return Math.max(4, Math.min(10, Math.round(length / 10000)));
+}
+
+/**
+ * Eine Schleife am Ende eines Hin-und-zurück-Stücks zählt als Wendeschleife,
+ * wenn sie höchstens doppelt so lang ist wie der gemeinsame Weg (max. 3 km) –
+ * sonst ist es eine echte Runde, die nur ein Stück gemeinsam hat.
+ */
+const MAX_TURN_LOOP = 3000;
+const TURN_LOOP_FACTOR = 2;
+
+/**
+ * Findet Stichstraßen: Die Route fährt ein Stück und auf demselben Weg wieder
+ * zurück – direkt gewendet oder über eine kurze Wendeschleife (Kreisverkehr,
+ * um den Block). Liefert Indexbereiche [a, b] mit coords[a] = coords[b]; alles
+ * dazwischen ist Hin, Wenden und Zurück.
+ */
+export function findSpurs(coords: LngLat[]): [number, number][] {
+  // aufeinanderfolgende doppelte Punkte zusammenfassen (Wendepunkt kann doppelt vorkommen)
+  const idx: number[] = [];
+  const key = (i: number) => `${coords[i][0].toFixed(6)},${coords[i][1].toFixed(6)}`;
+  for (let i = 0; i < coords.length; i++) if (!idx.length || key(idx[idx.length - 1]) !== key(i)) idx.push(i);
+  const n = idx.length;
+  const k = idx.map((i) => key(i));
+  const dist = cumulativeDistances(idx.map((i) => coords[i]));
+  // gerichtete Kanten → Positionen
+  const edges = new Map<string, number[]>();
+  for (let j = 0; j < n - 1; j++) {
+    const e = `${k[j]}>${k[j + 1]}`;
+    const list = edges.get(e);
+    if (list) list.push(j);
+    else edges.set(e, [j]);
+  }
+  const out: [number, number][] = [];
+  let i = 0;
+  while (i < n - 1) {
+    // dieselbe Kante später in Gegenrichtung?
+    const back = (edges.get(`${k[i + 1]}>${k[i]}`) ?? []).find((j) => j > i);
+    if (back === undefined) {
+      i++;
+      continue;
+    }
+    // nach außen erweitern: wie lange laufen Hin- und Rückweg gemeinsam?
+    let a = i;
+    let b = back + 1;
+    while (a > 0 && b < n - 1 && k[a - 1] === k[b + 1]) {
+      a--;
+      b++;
+    }
+    // nach innen: wo beginnt die Wendeschleife?
+    let c = i + 1;
+    let d = back;
+    while (c + 1 < d - 1 && k[c + 1] === k[d - 1]) {
+      c++;
+      d--;
+    }
+    const run = dist[c] - dist[a];
+    const turn = dist[d] - dist[c];
+    // nur echte Stichstraßen: Wendeschleife kurz (sonst ist es eine Runde mit gemeinsamem Stück)
+    const prevEnd = out.length ? idx.indexOf(out[out.length - 1][1]) : 0;
+    if (turn <= Math.min(MAX_TURN_LOOP, Math.max(run * TURN_LOOP_FACTOR, 100)) && a >= prevEnd) {
+      out.push([idx[a], idx[b]]);
+      i = b;
+    } else {
+      i++;
+    }
+  }
+  return out;
+}
+
+/** Schneidet die Bereiche (a, b] aus einer Etappe heraus; Abschnitte und Hinweise werden umgerechnet. */
+function cutRanges(leg: LegResult, cuts: [number, number][]): LegResult {
+  const keep: [number, number][] = [];
+  let start = 0;
+  for (const [a, b] of cuts) {
+    keep.push([start, a]);
+    start = b + 1;
+  }
+  keep.push([start, leg.coords.length - 1]);
+  const map = new Map<number, number>();
+  const coords: LngLat[] = [];
+  const ele: number[] = [];
+  for (const [a, b] of keep) {
+    for (let i = a; i <= b; i++) {
+      map.set(i, coords.length);
+      coords.push(leg.coords[i]);
+      ele.push(leg.ele[i]);
+    }
+  }
+  // Abschnitt eines herausgeschnittenen Bereichs: auf den Schnittpunkt zusammenziehen
+  const newIndex = (i: number) => {
+    if (map.has(i)) return map.get(i)!;
+    let best = 0;
+    for (const [old, n] of map) if (old <= i) best = Math.max(best, n);
+    return best;
+  };
+  const segments: Segment[] = [];
+  for (const s of leg.segments) {
+    const from = newIndex(s.from);
+    const to = newIndex(s.to);
+    if (to > from) {
+      const last = segments[segments.length - 1];
+      if (last && last.to > from) continue;
+      segments.push({ ...s, from, to });
+    }
+  }
+  const dist = cumulativeDistances(coords);
+  const length = dist[dist.length - 1];
+  const oldLen = cumulativeDistances(leg.coords);
+  const ratio = length / (oldLen[oldLen.length - 1] || 1);
+  return {
+    coords,
+    ele,
+    segments,
+    length,
+    ascend: leg.ascend * ratio,
+    time: leg.time * ratio,
+    hints: (leg.hints ?? []).filter((h) => map.has(h.index)).map((h) => ({ ...h, index: map.get(h.index)! })),
+  };
+}
+
+/** Rundtour ohne Stichstraßen (hin und auf demselben Weg zurück). */
+export function removeSpurs(leg: LegResult): LegResult {
+  let cur = leg;
+  // nach dem Herausschneiden können neue Wendepunkte entstehen → wiederholen
+  for (let round = 0; round < 5; round++) {
+    const spurs = findSpurs(cur.coords);
+    if (!spurs.length) break;
+    cur = cutRanges(cur, spurs);
+  }
+  return cur;
 }

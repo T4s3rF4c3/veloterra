@@ -3,6 +3,8 @@ import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+import { loadHeat } from './api/heatStore';
+import { loadTraceCache } from './api/osmTraces';
 import { initHistory } from './history';
 import './styles.css';
 
@@ -11,6 +13,10 @@ setWorkerUrl(workerUrl);
 
 // Rückgängig/Wiederholen für Änderungen an der Route
 initHistory();
+
+// eigene Heatmap aus dem Browser-Speicher laden
+void loadHeat();
+void loadTraceCache();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

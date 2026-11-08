@@ -1,5 +1,5 @@
 import type { LngLat } from '../domain/geo';
-import { generateProfile } from '../domain/profile';
+import { generateProfile, type ProfileOptions } from '../domain/profile';
 import { parseBRouter, type LegResult, type Nogo, type Waypoint } from '../domain/route';
 import type { RoutingSettings } from '../domain/settings';
 
@@ -118,6 +118,13 @@ export interface RoundTripRequest {
   direction: number;
 }
 
+/**
+ * Wie weit BRouter Stichstraßen an den Rundtour-Hilfspunkten abschneiden darf
+ * (m). Unbegrenzt (0) ließ in Messungen Anfragen scheitern; den Rest erledigt
+ * removeSpurs.
+ */
+const ROUNDTRIP_CORRECT_DISTANCE = 400;
+
 /** Rundtour über BRouters eingebauten Rundtour-Modus (engineMode=4). */
 export function routeRoundTrip(r: RoundTripRequest, signal?: AbortSignal): Promise<LegResult> {
   const params: Record<string, string> = {
@@ -127,7 +134,9 @@ export function routeRoundTrip(r: RoundTripRequest, signal?: AbortSignal): Promi
     direction: String(Math.round(((r.direction % 360) + 360) % 360)),
   };
   if (r.nogos.length) params.nogos = nogoParam(r.nogos);
-  return enqueue(() => requestNow(params, r.settings, signal));
+  return enqueue(() =>
+    requestNow(params, r.settings, signal, { roundTrip: { correctDistance: ROUNDTRIP_CORRECT_DISTANCE } }),
+  );
 }
 
 /** Route über viele Punkte in einer Anfrage (z. B. GPX-Import). */
@@ -148,9 +157,10 @@ async function requestNow(
   params: Record<string, string>,
   settings: RoutingSettings,
   signal?: AbortSignal,
+  profile: ProfileOptions = {},
 ): Promise<LegResult> {
   signal?.throwIfAborted();
-  const text = generateProfile(settings);
+  const text = generateProfile(settings, profile);
   let reuploaded = false;
   for (let attempt = 0; attempt < 5; attempt++) {
     const id = await profileId(text, reuploaded);

@@ -26,6 +26,8 @@ import { avoidRange, dragRoute, insertWaypointOnRoute, moveWaypointLocally } fro
 import { cloneSettings } from '../domain/settings';
 import { gradeAt, roadColor, roadLabel, stretchAt, surfaceColor, surfaceLabel, wayDetails } from '../domain/stretch';
 import type { Piece } from '../hooks/useColoring';
+import { useHeat } from '../api/heatStore';
+import { cellOutlines, traceFeatures, useTraces } from '../api/osmTraces';
 import { listByArea, tileUrl } from '../api/waymarked';
 import { useStore, type Basemap, type Suggestion } from '../store';
 import { SUGGESTION_COLORS } from '../domain/roundtrip';
@@ -201,6 +203,70 @@ function pointFC(points: LngLat[]): FC {
 
 function addLayers(map: MlMap) {
   if (map.getLayer('route')) return;
+  // öffentliche GPS-Spuren von OpenStreetMap (alle hochgeladenen Tracks)
+  if (!map.getSource('osm-gps'))
+    map.addSource('osm-gps', {
+      type: 'raster',
+      tiles: ['https://gps.tile.openstreetmap.org/lines/{z}/{x}/{y}.png'],
+      tileSize: 256,
+      maxzoom: 20,
+      attribution:
+        'GPS-Spuren © <a href="https://www.openstreetmap.org/traces" target="_blank" rel="noreferrer">OpenStreetMap</a>',
+    });
+  map.addLayer({ id: 'osm-gps', type: 'raster', source: 'osm-gps', layout: { visibility: 'none' } });
+  // Dichte der öffentlichen GPS-Spuren: blau = wenig … rot = viel
+  if (!map.getSource('traces')) map.addSource('traces', { type: 'geojson', data: EMPTY });
+  if (!map.getSource('traces-box')) map.addSource('traces-box', { type: 'geojson', data: EMPTY });
+  map.addLayer({
+    id: 'traces-box',
+    type: 'line',
+    source: 'traces-box',
+    layout: { visibility: 'none' },
+    paint: { 'line-color': '#0f172a', 'line-width': 1, 'line-dasharray': [2, 3], 'line-opacity': 0.35 },
+  });
+  map.addLayer({
+    id: 'traces-heat',
+    type: 'heatmap',
+    source: 'traces',
+    layout: { visibility: 'none' },
+    paint: {
+      // Gewicht = Anzahl der Spuren in der Rasterzelle (gedeckelt, sonst überstrahlen Hauptstraßen alles)
+      'heatmap-weight': ['min', ['get', 'w'], 8],
+      'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 9, 0.35, 13, 0.7, 16, 1.2],
+      'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 10, 3, 13, 7, 16, 16],
+      'heatmap-opacity': 0.85,
+      'heatmap-color': [
+        'interpolate',
+        ['linear'],
+        ['heatmap-density'],
+        0,
+        'rgba(0,0,0,0)',
+        0.08,
+        'rgba(37,99,235,0.55)',
+        0.3,
+        '#22c55e',
+        0.55,
+        '#facc15',
+        0.8,
+        '#f97316',
+        1,
+        '#dc2626',
+      ],
+    },
+  });
+  // eigene Fahrten als Heatmap: viele halbtransparente Linien übereinander
+  if (!map.getSource('myheat')) map.addSource('myheat', { type: 'geojson', data: EMPTY, tolerance: 0.6 });
+  map.addLayer({
+    id: 'myheat',
+    type: 'line',
+    source: 'myheat',
+    layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' },
+    paint: {
+      'line-color': '#fc4c02',
+      'line-width': ['interpolate', ['linear'], ['zoom'], 8, 1, 14, 2.5, 17, 4],
+      'line-opacity': ['interpolate', ['linear'], ['zoom'], 8, 0.25, 14, 0.4],
+    },
+  });
   // Netz beschilderter Rad-/MTB-Routen (Waymarked Trails), zunächst ausgeblendet
   for (const kind of ['cycling', 'mtb'] as const) {
     if (!map.getSource(`wmt-${kind}`))
@@ -832,6 +898,51 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
   }, [waypoints, styleReady, mode]);
 
   // Original-Track eines GPX-Imports
+  // Öffentliche GPS-Spuren und eigene Heatmap
+  const showGpsTraces = useStore((s) => s.showGpsTraces);
+  const showMyHeat = useStore((s) => s.showMyHeat);
+  const heatVersion = useHeat((s) => s.version);
+  const gpsMode = useStore((s) => s.gpsMode);
+  const gpsFilter = useStore((s) => s.gpsFilter);
+  const gpsMulti = useStore((s) => s.gpsMulti);
+  const tracesVersion = useTraces((s) => s.version);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !styleReady) return;
+    if (map.getLayer('osm-gps'))
+      map.setLayoutProperty('osm-gps', 'visibility', showGpsTraces && gpsMode === 'lines' ? 'visible' : 'none');
+    if (map.getLayer('traces-heat')) {
+      map.setLayoutProperty('traces-heat', 'visibility', showGpsTraces && gpsMode === 'density' ? 'visible' : 'none');
+      // gespeichert sind nur Rad-Spuren; optional nur Rennrad-Tempo und nur mehrfach befahrene Wege
+      const conds: unknown[] = [];
+      if (gpsFilter === 'fast') conds.push(['==', ['get', 'k'], 'fast']);
+      if (gpsMulti) conds.push(['>=', ['get', 'w'], 2]);
+      map.setFilter('traces-heat', (conds.length ? ['all', ...conds] : null) as Parameters<typeof map.setFilter>[1]);
+      map.setLayoutProperty('traces-box', 'visibility', showGpsTraces && gpsMode === 'density' ? 'visible' : 'none');
+    }
+    const tracks = useHeat.getState().tracks;
+    const on = showMyHeat && tracks.length > 0;
+    if (map.getLayer('myheat')) map.setLayoutProperty('myheat', 'visibility', on ? 'visible' : 'none');
+    setData(
+      map,
+      'myheat',
+      on
+        ? {
+            type: 'FeatureCollection',
+            features: [{ type: 'Feature', properties: {}, geometry: { type: 'MultiLineString', coordinates: tracks } }],
+          }
+        : EMPTY,
+    );
+  }, [showGpsTraces, showMyHeat, heatVersion, gpsMode, gpsFilter, gpsMulti, styleReady]);
+
+  // Daten der gespeicherten GPS-Kacheln (nur wenn sich der Cache ändert)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !styleReady) return;
+    setData(map, 'traces', traceFeatures());
+    setData(map, 'traces-box', lineFC(cellOutlines()));
+  }, [tracesVersion, styleReady]);
+
   // Radrouten-Netz und gewählte Radroute
   const netOverlay = useStore((s) => s.netOverlay);
   const networkKind = useStore((s) => s.networkKind);

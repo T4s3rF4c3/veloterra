@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ElevationChart } from './components/ElevationChart';
 import { LegEditor } from './components/LegEditor';
+import { DensityLegend } from './components/GpsTraces';
 import { MapToolbar } from './components/MapToolbar';
 import { MapView, type MapApi } from './components/MapView';
 import { PhotoStrip } from './components/PhotoStrip';
@@ -9,6 +10,7 @@ import { SelectionBar } from './components/SelectionBar';
 import { Sidebar } from './components/Sidebar';
 import { sliceLine, type LngLat } from './domain/geo';
 import { uncertainSections } from './domain/surfaceCheck';
+import { useHeat } from './api/heatStore';
 import { useColoring } from './hooks/useColoring';
 import { useRouting } from './hooks/useRouting';
 import { useStops } from './hooks/useStops';
@@ -34,7 +36,8 @@ export default function App() {
   const windPoint: LngLat | null =
     mode === 'route' ? (waypoints[0] ? [waypoints[0].lng, waypoints[0].lat] : null) : loopStart;
   const wind = useWind(windPoint);
-  const coloring = useColoring(route, colorMode, wind.forecast, departure);
+  const heat = useHeat((s) => s.index);
+  const coloring = useColoring(route, colorMode, wind.forecast, departure, heat);
   const stops = useStops(route);
   const checkedSurfaces = useStore((s) => s.checkedSurfaces);
   const sections = useMemo(() => (route ? uncertainSections(route) : []), [route]);
@@ -108,7 +111,7 @@ export default function App() {
         <button className="panel-toggle" onClick={() => setPanelOpen(!panelOpen)} aria-label="Seitenleiste umschalten">
           {panelOpen ? '‹' : '›'}
         </button>
-        <MapToolbar hasRoute={!!route} />
+        <MapToolbar hasRoute={!!route} bounds={() => mapApi.current?.bounds() ?? null} />
         {mode === 'route' && route && coloring.legend.length > 0 && (
           <div className="map-legend">
             {coloring.legend.map((c) => (
@@ -123,6 +126,7 @@ export default function App() {
           <div className="map-legend">Windvorhersage wird geladen …</div>
         )}
         <div className="bottom">
+          <DensityLegend />
           {mode === 'route' && route && selection?.end != null && <SelectionBar route={route} />}
           {mode === 'route' && route && showPhotos && <PhotoStrip route={route} />}
           {mode === 'route' && route && (

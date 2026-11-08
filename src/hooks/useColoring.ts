@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { GRADE_CLASSES, detectClimbs, gradeClass, gradients, type Climb } from '../domain/climbs';
+import type { HeatIndex } from '../domain/heat';
 import type { CombinedRoute } from '../domain/route';
 import { ROADS, SURFACES } from '../domain/settings';
 import {
@@ -30,6 +31,7 @@ export interface LegendItem {
 const SURFACE_COLOR = Object.fromEntries(SURFACES.map((s) => [s.key, s.color]));
 const ROAD_COLOR = Object.fromEntries(ROADS.map((r) => [r.key, r.color]));
 export const PLAIN = '#2563eb';
+const NOVELTY_COLORS = { new: '#ea580c', known: '#64748b' };
 
 /** Aufeinanderfolgende Punkte gleicher Klasse zu Abschnitten zusammenfassen. */
 function group(n: number, keyOf: (i: number) => string, colorOf: (k: string) => string): Piece[] {
@@ -62,6 +64,7 @@ export function useColoring(
   mode: ColorMode,
   forecast: WindForecast | null,
   departure: number,
+  heat: HeatIndex | null,
 ): Coloring {
   const climbs = useMemo(() => (route ? detectClimbs(route.dist, route.ele) : []), [route]);
   const grades = useMemo(() => (route && mode === 'grade' ? gradients(route.dist, route.ele) : null), [route, mode]);
@@ -94,6 +97,17 @@ export function useColoring(
         (k) => colors[k],
       );
       legend = GRADE_CLASSES.map((g) => ({ key: g.key, label: g.label, color: g.color }));
+    } else if (mode === 'novelty' && heat && heat.size) {
+      const known = heat.knownAlong(route.coords);
+      pieces = group(
+        route.coords.length,
+        (i) => (known[i] && known[i + 1] ? 'known' : 'new'),
+        (k) => NOVELTY_COLORS[k as keyof typeof NOVELTY_COLORS],
+      );
+      legend = [
+        { key: 'new', label: 'Neu für dich', color: NOVELTY_COLORS.new },
+        { key: 'known', label: 'Schon gefahren', color: NOVELTY_COLORS.known },
+      ];
     } else if (mode === 'wind' && wind) {
       pieces = group(
         route.coords.length,
@@ -111,5 +125,5 @@ export function useColoring(
     }
     const used = new Set(pieces.map((p) => p.key));
     return { pieces, legend: legend.filter((l) => used.has(l.key)), climbs, wind: summary };
-  }, [route, mode, grades, wind, climbs]);
+  }, [route, mode, grades, wind, climbs, heat]);
 }

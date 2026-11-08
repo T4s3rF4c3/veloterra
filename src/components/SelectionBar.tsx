@@ -70,7 +70,9 @@ export function SelectionBar({ route }: { route: CombinedRoute }) {
     const si = wps.findIndex((w) => w.id === startId);
     const ei = wps.findIndex((w) => w.id === endId);
     // ein gemeinsames Objekt, damit der Editor die Etappen als Einheit erkennt
-    const shared = cloneSettings(overrides[legKey(wps[si], wps[si + 1])]?.settings ?? settings);
+    // Ausgangspunkt: eigene Abschnitts-Einstellung, sonst dein Profil (nicht das neutrale Import-Profil)
+    const cur = overrides[legKey(wps[si], wps[si + 1])];
+    const shared = cloneSettings((cur?.presetLabel !== 'Import' && cur?.settings) || settings);
     let firstKey: string | null = null;
     for (let i = si; i < ei; i++) {
       const key = legKey(wps[i], wps[i + 1]);

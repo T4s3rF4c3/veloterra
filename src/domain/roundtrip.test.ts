@@ -79,3 +79,101 @@ describe('roundtrip', () => {
     expect(isSimilar(loop, loop)).toBe(true);
   });
 });
+
+describe('Stichstraßen', () => {
+  it('schneidet Hin- und Rückweg auf derselben Straße heraus', async () => {
+    const { findSpurs, removeSpurs } = await import('./roundtrip');
+    type P = [number, number];
+    // Quadrat-Runde mit einer Stichstraße nach Osten an der Ecke (8.01, 50)
+    const coords: P[] = [
+      [8, 50],
+      [8.005, 50],
+      [8.01, 50],
+      [8.015, 50], // Stich hin
+      [8.02, 50], // Wendepunkt
+      [8.02, 50], // doppelt
+      [8.015, 50], // zurück
+      [8.01, 50],
+      [8.01, 50.01],
+      [8, 50.01],
+      [8, 50],
+    ];
+    expect(findSpurs(coords)).toEqual([[2, 7]]);
+    const leg = {
+      coords,
+      ele: coords.map((_, i) => 100 + i),
+      segments: [
+        { from: 0, to: 4, tags: {}, surface: 'asphalt' as const, surfaceInferred: false, road: 'minor' as const },
+        { from: 4, to: 10, tags: {}, surface: 'gravel' as const, surfaceInferred: false, road: 'track' as const },
+      ],
+      length: 4000,
+      ascend: 10,
+      time: 600,
+      hints: [{ index: 8, cmd: 2, exit: 0, angle: -90 }],
+    };
+    const clean = removeSpurs(leg);
+    expect(clean.coords).toEqual([coords[0], coords[1], coords[2], coords[8], coords[9], coords[10]]);
+    expect(clean.segments.map((s) => [s.from, s.to])).toEqual([
+      [0, 2],
+      [2, 5],
+    ]);
+    expect(clean.hints).toEqual([{ index: 3, cmd: 2, exit: 0, angle: -90 }]);
+    expect(clean.length).toBeLessThan(leg.length);
+    expect(findSpurs(clean.coords)).toEqual([]);
+  });
+
+  it('erkennt Wenden über einen kleinen Kreisverkehr', async () => {
+    const { findSpurs } = await import('./roundtrip');
+    type P = [number, number];
+    const coords: P[] = [
+      [8, 50],
+      [8.01, 50], // Abzweig J
+      [8.02, 50], // hin
+      [8.03, 50], // Kreisverkehr
+      [8.0302, 50.0002],
+      [8.0298, 50.0002],
+      [8.03, 50], // wieder am Kreisverkehr
+      [8.02, 50], // zurück
+      [8.01, 50], // J
+      [8.01, 50.01],
+      [8, 50.01],
+      [8, 50],
+    ];
+    expect(findSpurs(coords)).toEqual([[1, 8]]);
+  });
+
+  it('lässt den gemeinsamen Anfangs- und Endweg einer Runde stehen', async () => {
+    const { findSpurs } = await import('./roundtrip');
+    type P = [number, number];
+    // Start → Abzweig über dieselbe Straße hin und am Ende zurück, dazwischen eine große Runde
+    const coords: P[] = [
+      [8, 50],
+      [8.01, 50],
+      [8.02, 50],
+      [8.05, 50.02],
+      [8.02, 50.05],
+      [8.02, 50],
+      [8.01, 50],
+      [8, 50],
+    ];
+    expect(findSpurs(coords)).toEqual([]);
+  });
+
+  it('lässt eine Runde ohne Wendepunkt unverändert', async () => {
+    const { removeSpurs } = await import('./roundtrip');
+    const leg = {
+      coords: [
+        [8, 50],
+        [8.01, 50],
+        [8.01, 50.01],
+        [8, 50],
+      ] as [number, number][],
+      ele: [1, 2, 3, 4],
+      segments: [],
+      length: 3000,
+      ascend: 0,
+      time: 500,
+    };
+    expect(removeSpurs(leg)).toBe(leg);
+  });
+});

@@ -2091,3 +2091,86 @@ button.link:hover:not(:disabled) {
   color: var(--muted);
   font-size: 11.5px;
 }
+
+/* Eigene Heatmap */
+.novelty-line {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.novelty-line b {
+  color: #c2410c;
+}
+.heat-actions {
+  display: flex;
+  gap: 6px;
+  margin: 10px 0 6px;
+}
+.heat-actions .primary {
+  flex: 1;
+}
+.heat-result {
+  color: var(--prefer);
+  margin: 4px 0 8px;
+}
+.heat-help {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* Öffentliche GPS-Spuren */
+.gps-options {
+  margin: 0 0 6px 42px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.gps-options p {
+  margin: 0;
+}
+.gps-load {
+  align-self: flex-start;
+}
+.density-legend {
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: rgb(255 255 255 / 0.95);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  padding: 7px 10px;
+  font-size: 12px;
+  pointer-events: none;
+}
+.ramp-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+}
+.ramp {
+  display: inline-block;
+  width: 120px;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, rgb(37 99 235 / 0.55), #22c55e, #facc15, #f97316, #dc2626);
+}
+.gps-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+}
+.gps-loading .spinner {
+  margin: 0;
+  width: 14px;
+  height: 14px;
+}
+.gps-cache-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}

@@ -7,12 +7,14 @@ import type { UncertainSection } from '../domain/surfaceCheck';
 import { turnPoints } from '../domain/turns';
 import { compassLabel, windAt, type WindForecast } from '../domain/wind';
 import type { Coloring } from '../hooks/useColoring';
+import { useHeat } from '../api/heatStore';
 import { useImport } from '../hooks/useImport';
 import type { LegStatus } from '../hooks/useRouting';
 import { departureTime } from '../hooks/useWind';
 import { useStore, type Mode } from '../store';
 import { ExplorePanel } from './ExplorePanel';
 import { Library } from './Library';
+import { HeatPanel } from './HeatPanel';
 import { LoopPanel } from './LoopPanel';
 import { NetworkPanel } from './NetworkPanel';
 import { Panel } from './Panel';
@@ -307,6 +309,7 @@ export function Sidebar({
   const importTrack = useStore((s) => s.importTrack);
   const routeName = useStore((s) => s.routeName);
   const departure = departureTime(useStore((s) => s.departure));
+  const heat = useHeat((s) => s.index);
   const st = useStore.getState;
 
   const total = route ? route.dist[route.dist.length - 1] : 0;
@@ -390,6 +393,14 @@ export function Sidebar({
                     </p>
                   ))}
                   <button onClick={onRetry}>Erneut versuchen</button>
+                </div>
+              )}
+              {route && heat && heat.size > 0 && (
+                <div
+                  className="novelty-line"
+                  title="Anteil der Route, den du laut deiner Heatmap noch nie gefahren bist"
+                >
+                  🔥 <b>{Math.round(heat.novelty(route.coords) * 100)} %</b> neu für dich
                 </div>
               )}
               {parts && total > 0 && (
@@ -511,6 +522,8 @@ export function Sidebar({
       )}
 
       {mode === 'route' && <Library route={route} fit={fit} />}
+
+      {(mode === 'route' || mode === 'loop') && <HeatPanel />}
 
       <Panel
         id="profile"

@@ -110,3 +110,33 @@ describe('Lokales Umplanen', () => {
     expect(st.overrides[keys[2]]).toBeUndefined();
   });
 });
+
+describe('Profil beim Umplanen', () => {
+  it('plant in importierten Routen mit dem eigenen Profil um, nicht mit dem Import-Profil', async () => {
+    const { FOLLOW_SETTINGS } = await import('./hooks/useImport');
+    const route = setup();
+    const st = useStore.getState();
+    const [a, b] = st.waypoints;
+    useStore.setState({ overrides: { [legKey(a, b)]: { settings: FOLLOW_SETTINGS, presetLabel: 'Import' } } });
+    dragRoute(route, route.dist[100], [8.1, 50.002]);
+    const s2 = useStore.getState();
+    const legs = s2.waypoints.slice(0, -1).map((w, i) => s2.overrides[legKey(w, s2.waypoints[i + 1])]);
+    // unveränderte Stücke folgen weiter dem Original, die neu geplanten nutzen das Profil
+    expect(legs[0]?.presetLabel).toBe('Import');
+    expect(legs[1]).toBeUndefined();
+    expect(legs[2]).toBeUndefined();
+    expect(legs[3]?.presetLabel).toBe('Import');
+  });
+
+  it('behält eigene Abschnitts-Einstellungen („Anders planen“) beim Umplanen', async () => {
+    const { PRESETS } = await import('./domain/settings');
+    const route = setup();
+    const [a, b] = useStore.getState().waypoints;
+    const allroad = PRESETS.find((p) => p.id === 'allroad')!.settings;
+    useStore.setState({ overrides: { [legKey(a, b)]: { settings: allroad, presetLabel: 'allroad' } } });
+    dragRoute(route, route.dist[100], [8.1, 50.002]);
+    const s2 = useStore.getState();
+    const legs = s2.waypoints.slice(0, -1).map((w, i) => s2.overrides[legKey(w, s2.waypoints[i + 1])]);
+    expect(legs.every((o) => o?.settings === allroad)).toBe(true);
+  });
+});

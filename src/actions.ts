@@ -38,6 +38,20 @@ function baseOverride(o: LegOverride | undefined): LegOverride | undefined {
   return Object.keys(rest).length ? rest : undefined;
 }
 
+/**
+ * Sonder-Einstellung für ein neu zu planendes Stück: Importierte Etappen
+ * folgen dem Original mit einem neutralen Profil (auch Waldwege) – wird dort
+ * umgeplant, gilt dein eigenes Routing-Profil. Eigene Abschnitts-Einstellungen
+ * („Anders planen“) und Sperrzonen bleiben erhalten.
+ */
+function newLegOverride(o: LegOverride | undefined): LegOverride | undefined {
+  if (!o || o.presetLabel !== 'Import') return o;
+  const rest = { ...o };
+  delete rest.settings;
+  delete rest.presetLabel;
+  return Object.keys(rest).length ? rest : undefined;
+}
+
 interface LegSpec {
   override?: LegOverride;
   /** Etappe folgt exakt der bisherigen Route zwischen diesen Indizes */
@@ -114,13 +128,13 @@ export function dragRoute(route: CombinedRoute, d0: number, p: LngLat) {
     legs.push({ override: o, fixed: [r.from, iA] });
   }
   points.push(mid);
-  legs.push({ override: o });
+  legs.push({ override: newLegOverride(o) });
   if (iB !== null) {
     points.push(wpAt(route, iB));
-    legs.push({ override: o });
+    legs.push({ override: newLegOverride(o) });
     legs.push({ override: o, fixed: [iB, r.to] });
   } else {
-    legs.push({ override: o });
+    legs.push({ override: newLegOverride(o) });
   }
   points.push(to);
   applyLocalEdit(route, L, L + 1, points, legs);
@@ -155,7 +169,7 @@ export function moveWaypointLocally(route: CombinedRoute | null, id: string, p: 
       points.push(wpAt(route, iA));
       legs.push({ override: o, fixed: [r.from, iA] });
     }
-    legs.push({ override: o });
+    legs.push({ override: newLegOverride(o) });
   }
   points.push(moved);
   if (i < wps.length - 1) {
@@ -163,7 +177,7 @@ export function moveWaypointLocally(route: CombinedRoute | null, id: string, p: 
     const o = baseOverride(st.overrides[legKey(wps[i], wps[i + 1])]);
     const iB = anchorIndex(route, route.dist[r.from] + w, r.from, r.to);
     last = i + 1;
-    legs.push({ override: o });
+    legs.push({ override: newLegOverride(o) });
     if (iB !== null) {
       points.push(wpAt(route, iB));
       legs.push({ override: o, fixed: [iB, r.to] });
@@ -219,7 +233,8 @@ export function avoidRange(route: CombinedRoute, start: number, end: number) {
     const w = anchorDistance((end - start) / 2);
     const iA = anchorIndex(route, start - w, r.from, r.to);
     const iB = anchorIndex(route, end + w, r.from, r.to);
-    const avoidO: LegOverride = { ...o, avoid: [...(o?.avoid ?? []), { line, nogos }] };
+    const n = newLegOverride(o);
+    const avoidO: LegOverride = { ...n, avoid: [...(n?.avoid ?? []), { line, nogos }] };
     const points: Waypoint[] = [from];
     const legs: LegSpec[] = [];
     if (iA !== null) {
@@ -237,7 +252,7 @@ export function avoidRange(route: CombinedRoute, start: number, end: number) {
   }
 
   for (const { key } of route.legRanges.slice(a, b + 1)) {
-    const o = st.overrides[key] ?? {};
+    const o = newLegOverride(st.overrides[key]) ?? {};
     st.setOverride(key, { ...o, alternative: 0, avoid: [...(o.avoid ?? []), { line, nogos }] });
   }
   useStore.getState().setSelection(null);

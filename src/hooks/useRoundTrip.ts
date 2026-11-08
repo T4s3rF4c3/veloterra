@@ -1,7 +1,14 @@
 import { useCallback, useRef, useState } from 'react';
 import { routeRoundTrip } from '../api/brouter';
 import type { LegResult, Waypoint } from '../domain/route';
-import { LENGTH_PER_RADIUS, candidateDirections, isSimilar, legCountFor, splitIntoLegs } from '../domain/roundtrip';
+import {
+  LENGTH_PER_RADIUS,
+  candidateDirections,
+  isSimilar,
+  legCountFor,
+  removeSpurs,
+  splitIntoLegs,
+} from '../domain/roundtrip';
 import { uid, useStore, type Suggestion } from '../store';
 import { globalNogos, primeLeg } from './useRouting';
 
@@ -40,10 +47,13 @@ export function useRoundTrip() {
     st.setActiveSuggestion(null);
     setProgress({ done: 0, total: dirs.length });
 
-    const run = (radius: number, dir: number) =>
-      routeRoundTrip(
-        { start: { lng: start[0], lat: start[1] }, settings, nogos, radius, direction: dir },
-        abort.signal,
+    // Stichstraßen (hin und auf demselben Weg zurück) gleich herausschneiden
+    const run = async (radius: number, dir: number) =>
+      removeSpurs(
+        await routeRoundTrip(
+          { start: { lng: start[0], lat: start[1] }, settings, nogos, radius, direction: dir },
+          abort.signal,
+        ),
       );
 
     for (let i = 0; i < dirs.length; i++) {
@@ -51,11 +61,12 @@ export function useRoundTrip() {
       try {
         let radius = distance / LENGTH_PER_RADIUS;
         let best: LegResult = await run(radius, dir);
-        // Länge einmal nachkorrigieren
-        if (Math.abs(best.length - distance) / distance > TOLERANCE) {
-          radius *= distance / best.length;
-          const second = await run(radius, dir);
-          if (Math.abs(second.length - distance) < Math.abs(best.length - distance)) best = second;
+        // Länge bis zu zweimal nachkorrigieren (Stichstraßen-Schnitt verkürzt manche Runden deutlich)
+        let last = best;
+        for (let k = 0; k < 2 && Math.abs(best.length - distance) / distance > TOLERANCE; k++) {
+          radius *= distance / last.length;
+          last = await run(radius, dir);
+          if (Math.abs(last.length - distance) < Math.abs(best.length - distance)) best = last;
         }
         if (!found.some((f) => isSimilar(f.leg, best))) {
           found.push({ id: uid(), leg: best, direction: dir });

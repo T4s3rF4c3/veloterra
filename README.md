@@ -47,6 +47,19 @@ Oben links auf der Karte: **↶ ↷** (Rückgängig/Wiederholen), **Ebenen** (Ka
 
 Alles (Route, Einstellungen, Sperren, gespeicherte Routen, berechnete Etappen) wird im Browser gespeichert – nach dem Neuladen ist die Route ohne neue Server-Anfrage da.
 
+## Heatmap
+
+- **Meine Heatmap** (Seitenleiste): eigene Fahrten importieren – den kompletten **Strava-Datenexport** (ZIP; Strava → Einstellungen → Mein Konto → „Konto herunterladen oder löschen“) oder einzelne **GPX/TCX/FIT**-Dateien (auch `.gz`), z. B. aus Komoot oder Garmin. Aus dem Strava-Export werden nur Radfahrten im Freien übernommen (keine Läufe, keine virtuellen Fahrten). Die Fahrten werden vereinfacht im Browser gespeichert (IndexedDB) – nichts wird hochgeladen.
+- Ebenen → **🔥 Meine Fahrten** zeigt sie als Heatmap; Einfärbung **„Neu für mich“** markiert, welche Teile der Route du noch nie gefahren bist. Die Routenübersicht zeigt den Anteil („71 % neu für dich“), Rundtour-Vorschläge ebenso – mit Sortierung **„Neue Straßen“**.
+- Ebenen → **🗺️ Öffentliche GPS-Spuren**: zu OpenStreetMap hochgeladene Tracks.
+  - **Dichte (viel/wenig)**: „Bereich laden“ holt die GPS-Punkte des sichtbaren Bereichs in festen Kacheln (0,1° × 0,1°, ca. 7 × 11 km; höchstens 20 Kacheln auf einmal) und zeigt sie als Heatmap – blau = wenig, rot = viel befahren. Die Kacheln bleiben dauerhaft im Browser gespeichert (IndexedDB, auf der Karte gestrichelt umrandet): Zoomen, Verschieben und Neustarts laden nichts nach. „Bereich aktualisieren“ holt sie neu, „Alle löschen“ entfernt sie. In sehr dichten Gebieten lädt die App eine Kachel in Vierteln. Jede Spur wird gleichmäßig gezählt, egal wie oft das Gerät eine Position gespeichert hat.
+  - **Nur Rad-Spuren**: Die Art wird aus dem Tempo geschätzt (Median der Bewegung unter 7,5 km/h = zu Fuß; ab 38 km/h oder 10 % der Zeit über 50 km/h = Auto). Gespeichert und gezeigt werden nur Radfahrten, Filter **Alle Rad-Spuren / Rennrad-Tempo** (Median ab 23 km/h). Spuren ohne Zeitstempel fallen weg.
+  - **Bereinigt**: Spuren werden nur verbunden, wo die Punkte dicht aufeinander folgen (≤ 20 s, ≤ 120 m, < 70 km/h) – Lücken (Spur verlässt die Kachel), Pausen und GPS-Sprünge erzeugen keine Linien quer durchs Feld; Bruchstücke unter 150 m fallen weg. Pro Rasterzelle zählt jede Spur nur einmal; **„Nur mehrfach befahrene Wege“** blendet einzelne Zufallsspuren aus.
+  - **Linien**: alle Spuren weltweit als Kacheln; die Farbe zeigt dort nur die Fahrtrichtung.
+  - Auf dem Land sind es oft nur wenige Dutzend Spuren, in Städten deutlich mehr.
+
+Die globalen Heatmaps von Strava und Komoot sind nur mit Login bzw. gar nicht abrufbar und dürfen außerhalb der Apps nicht genutzt werden – daher diese freien Alternativen.
+
 ## Radwege
 
 Im Tab **„Radwege“** zeigt die Karte das Netz beschilderter Routen (Daten: [Waymarked Trails](https://waymarkedtrails.org) / OpenStreetMap) – umschaltbar zwischen **Radrouten** und **MTB-Routen**. Die Liste folgt dem Kartenausschnitt und lässt sich nach Ebene filtern (International, National, Regional, Lokal); ein Klick auf eine Route auf der Karte oder in der Liste zeigt Verlauf, Beschreibung und Links.
@@ -69,7 +82,8 @@ Die öffentlichen Overpass-Server sind oft ausgelastet. Antwortet keiner innerha
 
 Im Tab **„Rundtour finden“** Startpunkt per Klick setzen (oder Ort suchen → ＋), Länge (20–200 km) und Richtung wählen (Kompass; ✱ = beliebig) und „Rundtouren vorschlagen“ klicken.
 
-- Es werden mehrere Richtungen über BRouters Rundtour-Modus berechnet (`engineMode=4`, beliebig = 6 Richtungen, sonst Wunschrichtung ±35°). Weicht die Länge um mehr als 12 % ab, wird der Suchradius einmal nachkorrigiert.
+- Es werden mehrere Richtungen über BRouters Rundtour-Modus berechnet (`engineMode=4`, beliebig = 6 Richtungen, sonst Wunschrichtung ±35°). Weicht die Länge um mehr als 12 % ab, wird der Suchradius bis zu zweimal nachkorrigiert.
+- **Stichstraßen werden entfernt**: Fährt eine Runde ein Stück und auf derselben Straße wieder zurück (direkt gewendet oder über eine kurze Wendeschleife wie einen Kreisverkehr), wird dieses Stück herausgeschnitten. Dafür ist zusätzlich BRouters Korrektur für schlecht liegende Hilfspunkte eingeschaltet. Gemessen an 9 Testrunden: doppelt gefahrene Strecke von 16,5 % auf 1,4 %.
 - Jeder Vorschlag bekommt eine **Bewertung 0–100**: wie gut Belag und Straßenart zu deinem Profil passen, abzüglich doppelt gefahrener Strecken und Abweichung von der Wunschlänge. Sortierbar nach „Beste Straßen“, „Flach“ oder „Hügelig“.
 - **Übernehmen** zerlegt die Runde in Etappen (etwa alle 10 km ein Wegpunkt). Danach lässt sie sich wie jede Route bearbeiten – ohne erneute Server-Anfragen, weil die Etappen exakte Teilstücke der Runde sind.
 - Dauerhafte Sperren („Immer meiden“) gelten auch für die Rundtour-Suche.
