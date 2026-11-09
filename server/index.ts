@@ -73,11 +73,22 @@ function isAdmin(req: IncomingMessage): boolean {
 const clientIp = (req: IncomingMessage) =>
   (req.headers['x-real-ip'] as string) || req.socket.remoteAddress || 'unbekannt';
 
-/** höchstens 8 Fehlversuche je Adresse in 15 Minuten */
+/**
+ * Höchstens 8 Fehlversuche je Adresse und 40 insgesamt in 15 Minuten. Die
+ * Gesamtgrenze greift auch, wenn jemand den Server direkt anspricht und die
+ * Adresse (X-Real-IP) bei jedem Versuch fälscht.
+ */
 function tooManyAttempts(ip: string): boolean {
-  const recent = (failures.get(ip) ?? []).filter((t) => t > Date.now() - 15 * 60_000);
-  failures.set(ip, recent);
-  return recent.length >= 8;
+  const since = Date.now() - 15 * 60_000;
+  let total = 0;
+  for (const [key, times] of failures) {
+    const recent = times.filter((t) => t > since);
+    if (recent.length) failures.set(key, recent);
+    else failures.delete(key);
+    total += recent.length;
+  }
+  if (!failures.has(ip)) failures.set(ip, []);
+  return failures.get(ip)!.length >= 8 || total >= 40;
 }
 
 function sessionCookie(req: IncomingMessage, value: string, maxAge: number) {

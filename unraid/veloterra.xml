@@ -11,7 +11,7 @@
   <Project>https://github.com/T4s3rF4c3/veloterra</Project>
   <Overview>Routenplaner für Rennrad, Gravel, MTB und Trekking: Routen nach Belag und Straßenart planen, Abschnitte gezielt umplanen, Rundtouren und Ziele finden, GPX/TCX mit Abbiegehinweisen exportieren.&#xD;
 &#xD;
-Ohne weitere Einstellung nutzt die App den öffentlichen Routing-Server brouter.de. Für schnelle Rundtouren ohne Drosselung zusätzlich den Container „Veloterra-BRouter“ installieren und BROUTER_UPSTREAM auf http://[IP-des-Servers]:17777 setzen.</Overview>
+Ohne weitere Einstellung nutzt die App den öffentlichen Routing-Server brouter.de. Für schnelle Rundtouren ohne Drosselung zusätzlich den Container „Veloterra-BRouter“ installieren und BROUTER_UPSTREAM auf http://[IP-des-Servers]:17777 setzen. Für den Admin-Bereich (Anmeldung, GPS-Spuren für alle) den Container „Veloterra-API“ installieren und API_UPSTREAM auf http://[IP-des-Servers]:8787 setzen.</Overview>
   <Category>Tools: Other:</Category>
   <WebUI>http://[IP]:[PORT:80]/</WebUI>
   <TemplateURL>https://raw.githubusercontent.com/T4s3rF4c3/veloterra/main/unraid/veloterra.xml</TemplateURL>
@@ -24,5 +24,6 @@ Ohne weitere Einstellung nutzt die App den öffentlichen Routing-Server brouter.
   <Requires/>
   <Config Name="Web-Port" Target="80" Default="8088" Mode="tcp" Description="Port, unter dem Veloterra im Browser erreichbar ist" Type="Port" Display="always" Required="true" Mask="false">8088</Config>
   <Config Name="Eigener BRouter (intern)" Target="BROUTER_UPSTREAM" Default="" Mode="" Description="Adresse des Containers Veloterra-BRouter, z. B. http://192.168.1.10:17777 – leer lassen für den öffentlichen Server brouter.de" Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="Veloterra-API (intern)" Target="API_UPSTREAM" Default="" Mode="" Description="Adresse des Containers Veloterra-API, z. B. http://192.168.1.10:8787 – für Admin-Bereich und GPS-Spuren für alle. Leer = ohne Admin-Bereich" Type="Variable" Display="always" Required="false" Mask="false"/>
   <Config Name="BRouter-URL für den Browser" Target="BROUTER_URL" Default="" Mode="" Description="Nur falls der Browser einen BRouter direkt ansprechen soll (statt über BROUTER_UPSTREAM). Leer = brouter.de" Type="Variable" Display="advanced" Required="false" Mask="false"/>
 </Container>

@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>Veloterra-API</Name>
+  <Repository>ghcr.io/t4s3rf4c3/veloterra-api:latest</Repository>
+  <Registry>https://github.com/T4s3rF4c3/veloterra/pkgs/container/veloterra-api</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/T4s3rF4c3/veloterra/issues</Support>
+  <Project>https://github.com/T4s3rF4c3/veloterra</Project>
+  <Overview>Optionaler Server für Veloterra: Admin-Bereich mit Anmeldung, Einstellungen für alle Besucher (Mapillary-Token, BRouter- und Overpass-Server) und öffentliche GPS-Spuren einer Region (z. B. Rheinland-Pfalz), die einmal geladen und dann allen Besuchern bereitgestellt werden.&#xD;
+&#xD;
+In Veloterra danach API_UPSTREAM auf http://[IP-des-Servers]:8787 setzen. Ohne Admin-Passwort ist die Anmeldung gesperrt.</Overview>
+  <Category>Tools: Other:</Category>
+  <WebUI/>
+  <TemplateURL>https://raw.githubusercontent.com/T4s3rF4c3/veloterra/main/unraid/veloterra-api.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/T4s3rF4c3/veloterra/main/public/icon.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+  <Config Name="API-Port" Target="8787" Default="8787" Mode="tcp" Description="Port des Veloterra-Servers (Veloterra leitet /api hierher weiter)" Type="Port" Display="always" Required="true" Mask="false">8787</Config>
+  <Config Name="Admin-Passwort" Target="ADMIN_PASSWORD" Default="" Mode="" Description="Passwort für den Admin-Bereich – lang und eindeutig wählen. Leer = Anmeldung gesperrt" Type="Variable" Display="always" Required="true" Mask="true"/>
+  <Config Name="Daten" Target="/data" Default="/mnt/user/appdata/veloterra-api" Mode="rw" Description="Einstellungen (config.json) und geladene GPS-Kacheln (Rheinland-Pfalz ca. 20–40 MB)" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/veloterra-api</Config>
+</Container>

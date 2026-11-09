@@ -144,13 +144,16 @@ Veloterra gibt es als zwei Container-Images, die GitHub bei jedem Push auf `main
 
 1. Vorlagen auf den USB-Stick kopieren (Unraid-Terminal):
    ```bash
-   wget -P /boot/config/plugins/dockerMan/templates-user https://raw.githubusercontent.com/T4s3rF4c3/veloterra/main/unraid/veloterra.xml https://raw.githubusercontent.com/T4s3rF4c3/veloterra/main/unraid/veloterra-brouter.xml
+   wget -P /boot/config/plugins/dockerMan/templates-user https://raw.githubusercontent.com/T4s3rF4c3/veloterra/main/unraid/veloterra.xml https://raw.githubusercontent.com/T4s3rF4c3/veloterra/main/unraid/veloterra-brouter.xml https://raw.githubusercontent.com/T4s3rF4c3/veloterra/main/unraid/veloterra-api.xml
    ```
 2. *Docker → Add Container → Template:* **Veloterra-BRouter** wählen, Kacheln prüfen (Standard: Deutschland + Nachbarn, ca. 1 GB in `/mnt/user/appdata/veloterra-brouter`) → *Apply*. Der erste Start lädt die Kartendaten, das dauert einige Minuten (siehe Log).
-3. *Add Container → Template:* **Veloterra** wählen, **Eigener BRouter (intern)** auf `http://<IP-des-Unraid-Servers>:17777` setzen → *Apply*.
-4. Öffnen: `http://<IP-des-Unraid-Servers>:8088` (oder über das WebUI-Symbol).
+3. Optional für den Admin-Bereich: *Add Container → Template:* **Veloterra-API** wählen, ein **Admin-Passwort** setzen (Daten landen in `/mnt/user/appdata/veloterra-api`) → *Apply*.
+4. *Add Container → Template:* **Veloterra** wählen, **Eigener BRouter (intern)** auf `http://<IP-des-Unraid-Servers>:17777` setzen, für den Admin-Bereich außerdem **Veloterra-API (intern)** auf `http://<IP-des-Unraid-Servers>:8787` → *Apply*.
+5. Öffnen: `http://<IP-des-Unraid-Servers>:8088` (oder über das WebUI-Symbol).
 
-Ohne den BRouter-Container funktioniert Veloterra auch – dann einfach Schritt 2 weglassen und das Feld in Schritt 3 leer lassen; geroutet wird dann über brouter.de.
+Ohne den BRouter-Container funktioniert Veloterra auch – dann einfach Schritt 2 weglassen und das Feld in Schritt 4 leer lassen; geroutet wird dann über brouter.de. Ohne Veloterra-API (Schritt 3) läuft die App nur im Browser, ohne Admin-Bereich.
+
+Der API-Port 8787 ist im Heimnetz erreichbar, damit Veloterra ihn ansprechen kann. Er sollte nicht ins Internet freigegeben werden – von außen läuft alles über Veloterra (Port 8088).
 
 ### Variante B: Docker Compose (Plugin „Docker Compose Manager“ oder jeder Docker-Host)
 
