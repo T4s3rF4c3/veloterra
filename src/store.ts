@@ -222,7 +222,7 @@ export const useStore = create<State>()(
       },
       showStops: false,
       netOverlay: 'off',
-      showGpsTraces: false,
+      showGpsTraces: true,
       gpsMode: 'density',
       gpsFilter: 'bike',
       gpsMulti: false,
@@ -233,9 +233,9 @@ export const useStore = create<State>()(
       activeNetwork: null,
       networkLines: [],
       stopCategories: ['cafe', 'water', 'bike'],
-      showPhotos: false,
+      showPhotos: true,
       mapillaryToken: '',
-      showRadar: false,
+      showRadar: true,
       library: [],
       routeName: '',
       savedId: null,
@@ -445,7 +445,14 @@ export const useStore = create<State>()(
     }),
     {
       name: 'bike-planner',
-      version: 1,
+      version: 2,
+      // v2: Regenradar, Straßenfotos und öffentliche GPS-Spuren sind standardmäßig an –
+      // einmalig auch in bestehenden Browsern, danach gilt wieder die eigene Wahl
+      migrate: (persisted, version) => {
+        const s = persisted as Record<string, unknown>;
+        // gespeicherter Zustand hat die Form von `partialize`; fehlende Felder ergänzt `merge`
+        return (version < 2 ? { ...s, showRadar: true, showPhotos: true, showGpsTraces: true } : s) as never;
+      },
       // Kartenstil wird nicht übernommen: Start immer mit Luftbild DE
       merge: (persisted, current) => ({
         ...current,

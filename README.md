@@ -144,8 +144,14 @@ Veloterra gibt es als zwei Container-Images, die GitHub bei jedem Push auf `main
 
 1. Vorlagen auf den USB-Stick kopieren (Unraid-Terminal):
    ```bash
-   wget -P /boot/config/plugins/dockerMan/templates-user https://raw.githubusercontent.com/T4s3rF4c3/veloterra/main/unraid/veloterra.xml https://raw.githubusercontent.com/T4s3rF4c3/veloterra/main/unraid/veloterra-brouter.xml https://raw.githubusercontent.com/T4s3rF4c3/veloterra/main/unraid/veloterra-api.xml
+   cd /boot/config/plugins/dockerMan/templates-user
+   for f in veloterra veloterra-brouter veloterra-api; do
+     wget -q -O "$f.xml" "https://raw.githubusercontent.com/T4s3rF4c3/veloterra/main/unraid/$f.xml"
+   done
    ```
+   Derselbe Befehl aktualisiert die Vorlagen später (`-O` überschreibt die alten Dateien; `wget -P` würde stattdessen `veloterra.xml.1` daneben legen).
+
+   **Bereits installierte Container** nutzen ihre gespeicherte Kopie `my-<Name>.xml` – neue Felder einer aktualisierten Vorlage erscheinen dort nicht. Entweder das Feld beim Container unter *Edit → Add another Path, Port, Variable…* von Hand ergänzen (z. B. Variable `API_UPSTREAM`) oder den Container entfernen, `my-<Name>.xml` löschen und neu aus der Vorlage anlegen.
 2. *Docker → Add Container → Template:* **Veloterra-BRouter** wählen, Kacheln prüfen (Standard: Deutschland + Nachbarn, ca. 1 GB in `/mnt/user/appdata/veloterra-brouter`) → *Apply*. Der erste Start lädt die Kartendaten, das dauert einige Minuten (siehe Log).
 3. Optional für den Admin-Bereich: *Add Container → Template:* **Veloterra-API** wählen, ein **Admin-Passwort** setzen (Daten landen in `/mnt/user/appdata/veloterra-api`) → *Apply*.
 4. *Add Container → Template:* **Veloterra** wählen, **Eigener BRouter (intern)** auf `http://<IP-des-Unraid-Servers>:17777` setzen, für den Admin-Bereich außerdem **Veloterra-API (intern)** auf `http://<IP-des-Unraid-Servers>:8787` → *Apply*.

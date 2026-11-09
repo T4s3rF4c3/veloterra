@@ -1999,18 +1999,14 @@ button.link:hover:not(:disabled) {
   flex-direction: column;
   gap: 8px;
   margin-top: 10px;
-  padding: 10px 0 12px;
+  padding: 12px 0;
   background: var(--panel);
+  /* Inhalt verschwindet sichtbar darunter, statt angeschnitten zu wirken */
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -10px 14px -10px rgb(0 0 0 / 0.6);
 }
 .route-footer .save-row {
   margin: 0;
-}
-.route-footer .save-row input {
-  padding: 8px 14px;
-  border: 1px solid transparent;
-  border-radius: var(--pill);
-  background: var(--sunk);
-  font-size: 13.5px;
 }
 .save-row button.unsaved,
 .save-row button.saved {
@@ -2701,6 +2697,11 @@ button.link:hover:not(:disabled) {
   .tool-btn small {
     display: none;
   }
+  .radar-chip {
+    top: 60px;
+    right: auto;
+    left: 12px;
+  }
   .layers-menu {
     position: fixed;
     top: 56px;
@@ -3001,9 +3002,10 @@ button.link:hover:not(:disabled) {
 
 /* Hinweis, wie aktuell das Regenradar ist */
 .radar-chip {
+  /* oben rechts neben den Zoom-Knöpfen – unten liegen Fotoleiste und Legenden */
   position: absolute;
-  left: 12px;
-  bottom: 56px;
+  top: 12px;
+  right: 56px;
   z-index: 2;
   display: inline-flex;
   align-items: center;
@@ -3018,4 +3020,80 @@ button.link:hover:not(:disabled) {
 }
 .radar-chip .icon {
   color: var(--accent);
+}
+
+/* ===== Knöpfe: Feinschliff ===== */
+
+/* Kacheln: Beschriftung immer zweizeilig hoch und mittig, damit alle auf einer Linie stehen */
+.toolbar > button .tile-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.3em;
+}
+
+/* „+2 weitere“ in eigener Zeile unter der Legende */
+.bar-legend .more-link {
+  grid-column: 1 / -1;
+  justify-self: start;
+  min-height: 24px;
+  padding: 0;
+}
+
+/* Chips nicht direkt an den Erklärtext darüber */
+p + .chips {
+  margin-top: 10px;
+}
+
+/* Auswahlgruppen in Karten: sichtbarer Grund, Auswahl in Akzent */
+.pane .card .choice,
+.pane .card .seg {
+  background: var(--sunk);
+}
+.pane .card .choice button.on {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  box-shadow: none;
+}
+.pane .card .choice button:hover:not(:disabled):not(.on) {
+  background: var(--on-dark-hover);
+  color: var(--text);
+}
+.pane .card .compass button {
+  background: var(--sunk);
+}
+.pane .card .compass button.on {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* Rundtour: Luft zwischen Windzeile und Hauptknopf */
+.wind + .wide-btn,
+.wind + .loop-progress {
+  margin-top: 14px;
+}
+.wind-now > button {
+  margin-left: auto;
+}
+
+/* Speicherfeld überall im selben Pillen-Stil */
+.save-row input {
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: var(--pill);
+  background: var(--sunk);
+  font-size: 13.5px;
+}
+.save-row input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* dauerhafte Regeln (z. B. „Immer meiden“) als Warnung erkennbar */
+button.danger {
+  color: var(--danger-ink);
+  border-color: rgb(242 139 130 / 0.45);
+}
+button.danger:hover:not(:disabled) {
+  background: var(--danger-soft);
 }

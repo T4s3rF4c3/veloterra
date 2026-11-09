@@ -89,8 +89,8 @@ function Bar<K extends string>({
           </span>
         ))}
         {sorted.length > 3 && (
-          <button className="link" onClick={() => setAll(!all)}>
-            {all ? 'weniger' : `+${sorted.length - 3}`}
+          <button className="link more-link" onClick={() => setAll(!all)}>
+            {all ? 'weniger anzeigen' : `+${sorted.length - 3} weitere`}
           </button>
         )}
       </div>
@@ -273,7 +273,7 @@ function ImportButton({ fit }: { fit: (c: LngLat[]) => void }) {
         title="GPX-Datei laden (oder auf die Karte ziehen)"
       >
         <Icon name="upload" size={18} />
-        {busy ? 'Lädt …' : 'GPX laden'}
+        <span className="tile-label">{busy ? 'Lädt …' : 'GPX laden'}</span>
       </button>
       <input
         ref={input}
@@ -532,11 +532,11 @@ export function Sidebar({
                   title="Zurück zum Start fahren"
                 >
                   <Icon name="rotate-ccw" size={18} />
-                  Zum Start
+                  <span className="tile-label">Zum Start</span>
                 </button>
                 <button onClick={() => st().reverse()} disabled={waypoints.length < 2} title="Richtung umkehren">
                   <Icon name="swap" size={18} />
-                  Umkehren
+                  <span className="tile-label">Umkehren</span>
                 </button>
                 <button
                   onClick={() => {
@@ -547,11 +547,11 @@ export function Sidebar({
                   title="Letzten Wegpunkt entfernen"
                 >
                   <Icon name="backspace" size={18} />
-                  Letzten löschen
+                  <span className="tile-label">Letzten löschen</span>
                 </button>
                 <button onClick={() => st().clearRoute()} disabled={!waypoints.length} title="Route leeren">
                   <Icon name="x" size={18} />
-                  Route leeren
+                  <span className="tile-label">Route leeren</span>
                 </button>
                 <ImportButton fit={fit} />
               </div>

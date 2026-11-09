@@ -114,7 +114,7 @@ export function SelectionBar({ route }: { route: CombinedRoute }) {
         <button onClick={alternative} title="Alternative Route für diese Etappe">
           <Icon name="alternative" /> Alternative
         </button>
-        <button onClick={block} title="Für alle künftigen Routen sperren">
+        <button className="danger" onClick={block} title="Für alle künftigen Routen sperren">
           <Icon name="ban" /> Immer meiden
         </button>
         <button className="ghost" onClick={() => st().setSelection(null)} aria-label="Abbrechen">

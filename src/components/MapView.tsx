@@ -31,6 +31,7 @@ import type { Piece } from '../hooks/useColoring';
 import { useHeat } from '../api/heatStore';
 import { cellOutlines, syncFromServer, traceFeatures, useTraces } from '../api/osmTraces';
 import { listByArea, tileUrl } from '../api/waymarked';
+import { useSite } from '../api/site';
 import { useStore, type Basemap, type Suggestion } from '../store';
 import { SUGGESTION_COLORS } from '../domain/roundtrip';
 import { Icon } from './Icon';
@@ -1074,6 +1075,15 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
         : EMPTY,
     );
   }, [showGpsTraces, showMyHeat, heatVersion, gpsMode, gpsFilter, gpsMulti, styleReady]);
+
+  // Beim Start (Ebene an, Server erreichbar): vorab geladene Kacheln des Ausschnitts holen
+  const siteAvailable = useSite((s) => s.available);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !styleReady || !showGpsTraces || !siteAvailable) return;
+    const b = map.getBounds();
+    void syncFromServer([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()]);
+  }, [showGpsTraces, siteAvailable, styleReady]);
 
   // Daten der gespeicherten GPS-Kacheln (nur wenn sich der Cache ändert)
   useEffect(() => {
