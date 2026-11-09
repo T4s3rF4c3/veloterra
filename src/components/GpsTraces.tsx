@@ -1,4 +1,13 @@
-import { MAX_CELLS, cancelTraces, clearTraceCache, loadRegion, regionStatus, useTraces } from '../api/osmTraces';
+import { useEffect } from 'react';
+import {
+  MAX_CELLS,
+  cancelTraces,
+  clearTraceCache,
+  loadRegion,
+  regionStatus,
+  syncFromServer,
+  useTraces,
+} from '../api/osmTraces';
 import { CELL } from '../domain/traceGrid';
 import { useStore } from '../store';
 import { Icon } from './Icon';
@@ -28,6 +37,12 @@ export function GpsTracesOptions({ bounds }: { bounds: () => [number, number, nu
   const stored = Object.keys(cells).length;
   const b = bounds();
   const status = b ? regionStatus(b) : null;
+  // beim Einschalten: vom Server vorab geladene Kacheln des Ausschnitts holen
+  useEffect(() => {
+    const v = bounds();
+    if (v) void syncFromServer(v);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="gps-options">

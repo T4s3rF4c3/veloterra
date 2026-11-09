@@ -5,13 +5,15 @@ import { breakdown, type CombinedRoute } from '../domain/route';
 import { BIKE_TYPES, PRESETS, ROADS, SURFACE_CLASS, SURFACES, type CategoryInfo } from '../domain/settings';
 import type { UncertainSection } from '../domain/surfaceCheck';
 import { turnPoints } from '../domain/turns';
+import { weatherSummary } from '../domain/weather';
 import { compassLabel, windAt, type WindForecast } from '../domain/wind';
 import type { Coloring } from '../hooks/useColoring';
 import { useHeat } from '../api/heatStore';
 import { useImport } from '../hooks/useImport';
 import type { LegStatus } from '../hooks/useRouting';
-import { departureTime } from '../hooks/useWind';
+import { departureTime, useRouteWeather } from '../hooks/useWind';
 import { useStore, type Area, type Mode } from '../store';
+import { AdminPanel } from './AdminPanel';
 import { ExplorePanel } from './ExplorePanel';
 import { Library, SaveRow } from './Library';
 import { HeatPanel } from './HeatPanel';
@@ -21,7 +23,7 @@ import { Panel } from './Panel';
 import { ClimbList, StopsList } from './RouteExtras';
 import { SettingsEditor } from './SettingsEditor';
 import { SurfaceCheck } from './SurfaceCheck';
-import { WindCard } from './WindCard';
+import { WeatherAlong, WindCard } from './WindCard';
 import { Icon, type IconName } from './Icon';
 
 interface Props {
@@ -271,7 +273,7 @@ function ImportButton({ fit }: { fit: (c: LngLat[]) => void }) {
         title="GPX-Datei laden (oder auf die Karte ziehen)"
       >
         <Icon name="upload" size={18} />
-        {busy ? 'Lädt …' : 'Import'}
+        {busy ? 'Lädt …' : 'GPX laden'}
       </button>
       <input
         ref={input}
@@ -294,6 +296,7 @@ const AREAS: { value: Area; label: string; hint: string }[] = [
   { value: 'discover', label: 'Entdecken', hint: 'Rundtouren, Ziele und beschilderte Radwege' },
   { value: 'mine', label: 'Meine', hint: 'Gespeicherte Routen und eigene Heatmap' },
   { value: 'profile', label: 'Profil', hint: 'Radtyp und Routing-Einstellungen' },
+  { value: 'admin', label: 'Admin', hint: 'Zugänge, Server und Datensicherung' },
 ];
 
 const DISCOVER: { value: Exclude<Mode, 'route'>; label: string; hint: string }[] = [
@@ -307,9 +310,16 @@ const AREA_TITLE: Record<Area, string> = {
   discover: 'Entdecken',
   mine: 'Meine Daten',
   profile: 'Profil',
+  admin: 'Admin',
 };
 
-const AREA_ICON: Record<Area, IconName> = { plan: 'route', discover: 'compass', mine: 'folder', profile: 'bike' };
+const AREA_ICON: Record<Area, IconName> = {
+  plan: 'route',
+  discover: 'compass',
+  mine: 'folder',
+  profile: 'bike',
+  admin: 'gear',
+};
 
 /** Kennzahl mit kleiner gesetzter Einheit („87 km“ → 87 + km). */
 function Stat({ value, label }: { value: string | null; label: string }) {
@@ -419,6 +429,7 @@ export function Sidebar({
   );
   const importLegs = legs.filter((l) => isImport(l.key));
   const w = wind.forecast ? windAt(wind.forecast, departure) : null;
+  const weather = useRouteWeather(area === 'plan' ? route : null, departure);
   const novelty = useMemo(() => (route && heat && heat.size ? heat.novelty(route.coords) : null), [route, heat]);
 
   return (
@@ -428,7 +439,7 @@ export function Sidebar({
         {AREAS.map((a) => (
           <button
             key={a.value}
-            className={area === a.value ? 'on' : ''}
+            className={`${area === a.value ? 'on' : ''} ${a.value === 'admin' ? 'rail-end' : ''}`}
             onClick={() => st().setArea(a.value)}
             title={a.hint}
             aria-current={area === a.value ? 'page' : undefined}
@@ -444,7 +455,7 @@ export function Sidebar({
       <div className="pane">
         <header className="pane-head">
           <h1>{AREA_TITLE[area]}</h1>
-          {area !== 'profile' && <ProfilePill />}
+          {area !== 'profile' && area !== 'admin' && <ProfilePill />}
         </header>
 
         {/* ===== Planen ===== */}
@@ -536,11 +547,11 @@ export function Sidebar({
                   title="Letzten Wegpunkt entfernen"
                 >
                   <Icon name="backspace" size={18} />
-                  Letzter
+                  Letzten löschen
                 </button>
                 <button onClick={() => st().clearRoute()} disabled={!waypoints.length} title="Route leeren">
                   <Icon name="x" size={18} />
-                  Leeren
+                  Route leeren
                 </button>
                 <ImportButton fit={fit} />
               </div>
@@ -556,16 +567,19 @@ export function Sidebar({
               <div className="panel-group">
                 <Panel
                   id="wind"
-                  icon="wind"
-                  title="Wind"
+                  icon="cloud-sun"
+                  title="Wetter & Wind"
                   summary={
-                    w
-                      ? `${Math.round(w.speed)} km/h aus ${compassLabel(w.from)}` +
-                        (coloring.wind && w.speed >= 3 ? `, ${Math.round(coloring.wind.head * 100)} % Gegenwind` : '')
-                      : 'Vorhersage zur Abfahrtszeit'
+                    [
+                      weather.points && weatherSummary(weather.points),
+                      w && `Wind ${Math.round(w.speed)} km/h aus ${compassLabel(w.from)}`,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ') || 'Vorhersage zur Abfahrtszeit'
                   }
                 >
                   <WindCard forecast={wind.forecast} error={wind.error} summary={coloring.wind} />
+                  <WeatherAlong points={weather.points} error={weather.error} />
                 </Panel>
                 <ClimbList climbs={coloring.climbs} route={route} fit={fit} />
                 {showStops && (
@@ -654,6 +668,9 @@ export function Sidebar({
             <HeatPanel />
           </div>
         )}
+
+        {/* ===== Admin ===== */}
+        {area === 'admin' && <AdminPanel bounds={bounds} />}
 
         {/* ===== Profil ===== */}
         {area === 'profile' && (

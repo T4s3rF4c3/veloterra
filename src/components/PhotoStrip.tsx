@@ -3,13 +3,15 @@ import { usePhotos } from '../hooks/usePhotos';
 import type { CombinedRoute } from '../domain/route';
 import { useStore } from '../store';
 import { Icon } from './Icon';
+import { useSite } from '../api/site';
 
 /** Fotos entlang der Route als Streifen über dem Höhenprofil, mit Großansicht. */
 export function PhotoStrip({ route }: { route: CombinedRoute }) {
   const { loading, error } = usePhotos(route);
   const photos = useStore((s) => s.photos);
   const activeId = useStore((s) => s.activePhoto);
-  const token = useStore((s) => s.mapillaryToken);
+  const siteToken = useSite((s) => s.config.mapillaryToken);
+  const token = useStore((s) => s.mapillaryToken) || siteToken;
   const st = useStore.getState;
   const [showToken, setShowToken] = useState(false);
   const [draft, setDraft] = useState(token);

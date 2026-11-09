@@ -23,7 +23,7 @@ colors:
   prefer: "#81c995"
   avoid: "#fcad70"
   forbid: "#f28b82"
-  dest: "#ea4335"
+  dest: "#d93025"
   revision: "#c58af9"
   ok-ink: "#81c995"
   ok-soft: "#1f3327"

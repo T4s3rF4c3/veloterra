@@ -68,6 +68,7 @@ export function MapToolbar({
   const showPhotos = useStore((s) => s.showPhotos);
   const netOverlay = useStore((s) => s.netOverlay);
   const showGpsTraces = useStore((s) => s.showGpsTraces);
+  const showRadar = useStore((s) => s.showRadar);
   const showMyHeat = useStore((s) => s.showMyHeat);
   const heatCount = useHeat((s) => s.tracks.length);
   const st = useStore.getState;
@@ -201,6 +202,13 @@ export function MapToolbar({
               hint="Hochgeladene Tracks aus OpenStreetMap – zeigt, wo viel gefahren wird"
             />
             {showGpsTraces && <GpsTracesOptions bounds={bounds} />}
+            <Toggle
+              on={showRadar}
+              onChange={() => st().setShowRadar(!showRadar)}
+              icon="radar"
+              label="Regenradar"
+              hint="Niederschlag der letzten Minuten in der Umgebung (RainViewer, alle 10 Min. neu)"
+            />
           </div>
         )}
       </div>

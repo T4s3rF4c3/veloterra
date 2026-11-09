@@ -20,7 +20,7 @@ export interface Selection {
 export type Mode = 'route' | 'loop' | 'explore' | 'network';
 
 /** Bereich der Seitenleiste */
-export type Area = 'plan' | 'discover' | 'mine' | 'profile';
+export type Area = 'plan' | 'discover' | 'mine' | 'profile' | 'admin';
 
 export interface LoopOptions {
   distance: number;
@@ -94,6 +94,8 @@ interface State {
   stopCategories: string[];
   showPhotos: boolean;
   mapillaryToken: string;
+  /** Regenradar als Kartenebene */
+  showRadar: boolean;
   library: SavedRoute[];
   /** Name der aktuellen Route und ggf. ID in der Bibliothek */
   routeName: string;
@@ -159,6 +161,7 @@ interface State {
   setStopCategories: (c: string[]) => void;
   setShowPhotos: (v: boolean) => void;
   setMapillaryToken: (t: string) => void;
+  setShowRadar: (v: boolean) => void;
   setDeparture: (t: number | null) => void;
   setImportTrack: (t: State['importTrack']) => void;
   setStops: (p: Poi[]) => void;
@@ -232,6 +235,7 @@ export const useStore = create<State>()(
       stopCategories: ['cafe', 'water', 'bike'],
       showPhotos: false,
       mapillaryToken: '',
+      showRadar: false,
       library: [],
       routeName: '',
       savedId: null,
@@ -372,6 +376,7 @@ export const useStore = create<State>()(
       setStopCategories: (stopCategories) => set({ stopCategories }),
       setShowPhotos: (showPhotos) => set({ showPhotos }),
       setMapillaryToken: (mapillaryToken) => set({ mapillaryToken: mapillaryToken.trim() }),
+      setShowRadar: (showRadar) => set({ showRadar }),
       setDeparture: (departure) => set({ departure }),
       setImportTrack: (importTrack) => set({ importTrack }),
       setStops: (stops) => set({ stops }),
@@ -473,6 +478,7 @@ export const useStore = create<State>()(
         stopCategories: s.stopCategories,
         showPhotos: s.showPhotos,
         mapillaryToken: s.mapillaryToken,
+        showRadar: s.showRadar,
         library: s.library,
         routeName: s.routeName,
         savedId: s.savedId,

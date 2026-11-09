@@ -1,3 +1,4 @@
+import { weatherInfo, type WeatherPoint } from '../domain/weather';
 import { compassLabel, windAt, type WindForecast, type WindSummary } from '../domain/wind';
 import { departureTime } from '../hooks/useWind';
 import { useStore } from '../store';
@@ -97,6 +98,42 @@ export function WindCard({ forecast, error, summary, onRecommend }: Props) {
               : ''}
         </p>
       )}
+    </div>
+  );
+}
+
+const clock = (t: number) => new Date(t).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+
+/** Wetter entlang der Route: je Stelle Ankunftszeit, Lage, Temperatur und Regen. */
+export function WeatherAlong({ points, error }: { points: WeatherPoint[] | null; error: string | null }) {
+  if (error) return <p className="muted small">{error}</p>;
+  if (!points) return <p className="muted small">Wetter entlang der Route wird geladen …</p>;
+  return (
+    <div className="weather">
+      <div className="cap">Unterwegs</div>
+      <ol className="weather-list">
+        {points.map((p, i) => {
+          const info = weatherInfo(p.code);
+          return (
+            <li key={i} className={p.rainProb >= 50 ? 'wet' : undefined}>
+              <span className="weather-at">
+                <b>km {Math.round(p.distance / 1000)}</b>
+                <small>{clock(p.time)}</small>
+              </span>
+              <span className="weather-sky" title={info.label}>
+                <Icon name={info.icon} size={20} />
+                <small>{info.label}</small>
+              </span>
+              <b className="weather-temp">{Math.round(p.temp)}°</b>
+              <span className="weather-rain" title="Regenwahrscheinlichkeit">
+                <Icon name="droplet" size={13} />
+                {Math.round(p.rainProb)} %{p.rain >= 0.1 && <small>{p.rain.toFixed(1).replace('.', ',')} mm</small>}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+      <p className="muted small">Vorhersage zur voraussichtlichen Ankunftszeit · Open-Meteo</p>
     </div>
   );
 }

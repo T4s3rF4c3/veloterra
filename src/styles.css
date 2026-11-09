@@ -31,7 +31,7 @@
   --avoid: #fcad70;
   --forbid: #f28b82;
   /* Ziel-Marker und eigene Änderungen */
-  --dest: #ea4335;
+  --dest: #d93025;
   --revision: #c58af9;
   /* Statusflächen */
   --ok-ink: #81c995;
@@ -84,7 +84,12 @@ button {
   padding: 7px 14px;
   transition:
     background 0.12s,
-    border-color 0.12s;
+    border-color 0.12s,
+    transform 0.08s;
+}
+/* Beim Drücken gibt der Knopf sichtbar nach */
+button:active:not(:disabled) {
+  transform: translateY(1px) scale(0.98);
 }
 button:hover:not(:disabled) {
   background: var(--soft);
@@ -1937,7 +1942,8 @@ button.more {
 button.link {
   border: none;
   background: none;
-  padding: 0;
+  min-height: 24px;
+  padding: 0 4px;
   color: var(--accent);
   font-size: 12px;
 }
@@ -1961,6 +1967,8 @@ button.link:hover:not(:disabled) {
   gap: 3px;
   padding: 7px 2px 6px;
   font-size: 12px;
+  line-height: 1.15;
+  text-align: center;
   color: var(--muted);
   border-color: var(--line);
   border-radius: var(--radius);
@@ -2458,6 +2466,10 @@ button.link:hover:not(:disabled) {
 .rail button.on {
   color: var(--text);
 }
+.rail button.rail-end {
+  /* Admin unten in der Leiste, abgesetzt von den Arbeitsbereichen */
+  margin-top: auto;
+}
 .rail button.on .rail-pill {
   background: var(--accent-soft);
   color: var(--accent-ink);
@@ -2656,6 +2668,9 @@ button.link:hover:not(:disabled) {
     flex: 1;
     width: auto;
   }
+  .rail button.rail-end {
+    margin-top: 0;
+  }
   .band {
     padding: 8px 12px 2px;
   }
@@ -2759,6 +2774,18 @@ button.link:hover:not(:disabled) {
 
 /* Finger statt Maus: größere Wegpunkte */
 @media (pointer: coarse) {
+  button.mini,
+  .map-tools > .choice button,
+  .panel-toggle {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .tool-btn {
+    min-height: 44px;
+  }
+  button.link {
+    min-height: 44px;
+  }
   .wp {
     width: 32px;
     height: 32px;
@@ -2769,4 +2796,226 @@ button.link:hover:not(:disabled) {
     height: 28px;
     font-size: 12px;
   }
+}
+
+/* Wetter entlang der Route */
+.weather {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.weather-list {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+}
+.weather-list li {
+  display: grid;
+  grid-template-columns: 64px 1fr 44px 76px;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+}
+.weather-list li + li {
+  border-top: 1px solid var(--hairline);
+}
+.weather-at,
+.weather-sky {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+.weather-at small,
+.weather-sky small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.weather-sky {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+.weather-sky .icon {
+  color: var(--text);
+}
+.weather-temp {
+  font-size: 17px;
+  font-weight: 500;
+  text-align: right;
+}
+.weather-rain {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 2px 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.weather-rain small {
+  width: 100%;
+  text-align: right;
+  font-size: 11.5px;
+}
+.weather-list li.wet .weather-rain {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+/* Admin: Zugänge, Server, Sicherung */
+.admin-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.admin-card .card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--text);
+}
+.admin-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.admin-field + .admin-field {
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.admin-row {
+  display: flex;
+  gap: 6px;
+}
+.admin-row input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 13.5px;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: var(--pill);
+  background: var(--sunk);
+  color: var(--text);
+}
+.admin-row input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.admin-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.admin-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+}
+.admin-check.ok {
+  color: var(--ok-ink);
+}
+.admin-check.error {
+  color: var(--danger-ink);
+}
+.admin-check.busy {
+  color: var(--muted);
+}
+.admin-check .spinner {
+  margin: 0;
+  width: 14px;
+  height: 14px;
+}
+.admin-active {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: var(--sunk);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.admin-active small {
+  color: var(--muted);
+}
+.admin-confirm {
+  padding: 12px 14px;
+  border: 1px solid var(--warn-line);
+  border-radius: var(--radius);
+  background: var(--warn-soft);
+}
+.admin-confirm p {
+  margin: 0 0 10px;
+  font-size: 13px;
+}
+.admin-progress-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13.5px;
+}
+.admin-progress-head span {
+  color: var(--muted);
+}
+.admin-select {
+  font: inherit;
+  font-size: 13.5px;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: var(--pill);
+  background: var(--sunk);
+  color: var(--text);
+}
+.admin-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.admin-session {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--ok-ink);
+}
+.admin-session span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.admin-card code {
+  font-size: 12px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--sunk);
+}
+
+/* Hinweis, wie aktuell das Regenradar ist */
+.radar-chip {
+  position: absolute;
+  left: 12px;
+  bottom: 56px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--pill);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  font-size: 12px;
+  color: var(--text);
+  pointer-events: none;
+}
+.radar-chip .icon {
+  color: var(--accent);
 }

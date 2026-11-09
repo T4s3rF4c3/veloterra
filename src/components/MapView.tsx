@@ -7,6 +7,7 @@ import {
   ScaleControl,
   type GeoJSONSource,
   type MapMouseEvent,
+  type RasterTileSource,
   type StyleSpecification,
 } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -28,7 +29,7 @@ import { cloneSettings, SURFACE_CLASS, type SurfaceCat } from '../domain/setting
 import { gradeAt, roadColor, roadLabel, stretchAt, surfaceColor, surfaceLabel, wayDetails } from '../domain/stretch';
 import type { Piece } from '../hooks/useColoring';
 import { useHeat } from '../api/heatStore';
-import { cellOutlines, traceFeatures, useTraces } from '../api/osmTraces';
+import { cellOutlines, syncFromServer, traceFeatures, useTraces } from '../api/osmTraces';
 import { listByArea, tileUrl } from '../api/waymarked';
 import { useStore, type Basemap, type Suggestion } from '../store';
 import { SUGGESTION_COLORS } from '../domain/roundtrip';
@@ -536,6 +537,9 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
   const markerOwner = useRef<MlMap | null>(null);
 
   const waypoints = useStore((s) => s.waypoints);
+  const showRadar = useStore((s) => s.showRadar);
+  /** Zeitpunkt des angezeigten Radarbilds (ms), für den Hinweis auf der Karte */
+  const [radarTime, setRadarTime] = useState<number | null>(null);
   const basemap = useStore((s) => s.basemap);
   const blocks = useStore((s) => s.blocks);
   const overrides = useStore((s) => s.overrides);
@@ -586,6 +590,10 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
     map.on('moveend', () => {
       const c = map.getCenter();
       useStore.getState().setView({ center: [c.lng, c.lat], zoom: map.getZoom() });
+      if (useStore.getState().showGpsTraces) {
+        const b = map.getBounds();
+        void syncFromServer([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()]);
+      }
     });
     map.on('movestart', () => {
       setMenu(null);
@@ -1075,6 +1083,54 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
     setData(map, 'traces-box', lineFC(cellOutlines()));
   }, [tracesVersion, styleReady]);
 
+  // Regenradar (RainViewer): jüngstes Bild, alle 10 Minuten aktualisiert
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !styleReady) return;
+    const remove = () => {
+      if (map.getLayer('radar')) map.removeLayer('radar');
+      if (map.getSource('radar')) map.removeSource('radar');
+    };
+    if (!showRadar) {
+      remove();
+      setRadarTime(null);
+      return;
+    }
+    let alive = true;
+    const load = async () => {
+      try {
+        const j = await (await fetch('https://api.rainviewer.com/public/weather-maps.json')).json();
+        const frame = j.radar?.past?.[j.radar.past.length - 1];
+        if (!alive || !frame) return;
+        const tiles = [`${j.host}${frame.path}/256/{z}/{x}/{y}/2/1_1.png`];
+        setRadarTime(frame.time * 1000);
+        const src = map.getSource('radar') as RasterTileSource | undefined;
+        if (src) src.setTiles(tiles);
+        else {
+          map.addSource('radar', {
+            type: 'raster',
+            tiles,
+            tileSize: 256,
+            maxzoom: 7,
+            attribution: 'Regenradar © RainViewer',
+          });
+          map.addLayer(
+            { id: 'radar', type: 'raster', source: 'radar', paint: { 'raster-opacity': 0.65 } },
+            map.getLayer('route-casing') ? 'route-casing' : undefined,
+          );
+        }
+      } catch {
+        /* Radar nicht erreichbar – Karte bleibt ohne */
+      }
+    };
+    void load();
+    const timer = window.setInterval(load, 10 * 60_000);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+    };
+  }, [showRadar, styleReady]);
+
   // Radrouten-Netz und gewählte Radroute
   const netOverlay = useStore((s) => s.netOverlay);
   const networkKind = useStore((s) => s.networkKind);
@@ -1373,6 +1429,12 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
             </div>
           );
         })()}
+      {showRadar && radarTime && (
+        <div className="radar-chip" title="Niederschlag laut RainViewer, alle 10 Minuten neu">
+          <Icon name="radar" size={14} />
+          Regenradar · Stand {new Date(radarTime).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+        </div>
+      )}
       {tip && route && !menu && (
         <RouteTip
           route={route}

@@ -1,3 +1,4 @@
+import { useSite } from './site';
 /**
  * Overpass-Abfragen (OpenStreetMap). Die öffentlichen Server sind oft
  * ausgelastet – daher nacheinander mehrere Spiegel probieren.
@@ -22,11 +23,18 @@ const cache = new Map<string, Promise<OsmElement[]>>();
 /** Server, der zuletzt geantwortet hat, zuerst fragen */
 let preferred = 0;
 
+/** Eigener Server aus dem Admin-Bereich zuerst, dann die öffentlichen Spiegel. */
+const servers = () => {
+  const own = useSite.getState().config.overpassUrl;
+  return own ? [{ url: own, timeout: 30000 }, ...SERVERS] : SERVERS;
+};
+
 async function run(query: string, signal?: AbortSignal): Promise<OsmElement[]> {
   let lastError = 'Keine Antwort';
-  for (let k = 0; k < SERVERS.length; k++) {
-    const idx = (preferred + k) % SERVERS.length;
-    const s = SERVERS[idx];
+  const list = servers();
+  for (let k = 0; k < list.length; k++) {
+    const idx = (preferred + k) % list.length;
+    const s = list[idx];
     signal?.throwIfAborted();
     const timeout = AbortSignal.timeout(s.timeout);
     const combined = signal ? AbortSignal.any([signal, timeout]) : timeout;

@@ -7,6 +7,7 @@ import type { CombinedRoute } from '../domain/route';
 import { uncertaintyText, type UncertainSection } from '../domain/surfaceCheck';
 import { useStore } from '../store';
 import { Icon } from './Icon';
+import { useSite } from '../api/site';
 
 const KIND_CLASS: Record<UncertainSection['kind'], string> = { missing: 'bad', unclear: 'bad', guessed: 'ok' };
 const KIND_LABEL: Record<UncertainSection['kind'], string> = {
@@ -17,7 +18,8 @@ const KIND_LABEL: Record<UncertainSection['kind'], string> = {
 
 /** Ein Foto vom Abschnitt (Panoramax/Mapillary), falls vorhanden. */
 function SectionPhoto({ line }: { line: LngLat[] }) {
-  const token = useStore((s) => s.mapillaryToken);
+  const siteToken = useSite((s) => s.config.mapillaryToken);
+  const token = useStore((s) => s.mapillaryToken) || siteToken;
   const [photo, setPhoto] = useState<Photo | null | undefined>(undefined);
   const key = `${line[0]}|${line[line.length - 1]}`;
   useEffect(() => {

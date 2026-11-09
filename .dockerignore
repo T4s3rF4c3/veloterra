@@ -6,3 +6,6 @@ dist
 unraid
 docker/brouter
 *.log
+dist-server
+data-api
+data

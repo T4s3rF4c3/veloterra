@@ -16,8 +16,25 @@ services:
       - "8088:80"
     environment:
       BROUTER_UPSTREAM: http://brouter:17777
+      API_UPSTREAM: http://veloterra-api:8787
     depends_on:
       - brouter
+      - veloterra-api
+    restart: unless-stopped
+
+  # Admin-Bereich mit Anmeldung, seitenweite Einstellungen (Mapillary-Token,
+  # Server) und GPS-Spuren, die einmal für alle Besucher geladen werden
+  veloterra-api:
+    image: ghcr.io/t4s3rf4c3/veloterra-api:latest
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    container_name: veloterra-api
+    environment:
+      # Passwort für den Admin-Bereich – bitte ändern (ohne: Anmeldung gesperrt)
+      ADMIN_PASSWORD: ${VELOTERRA_ADMIN_PASSWORD:-}
+    volumes:
+      - ${APPDATA:-./data}/api:/data
     restart: unless-stopped
 
   brouter:

@@ -2,7 +2,7 @@
 
 Routenplaner für **Rennrad, Gravel, MTB und Trekking** mit feiner Steuerung nach **Untergrund** und **Straßenart** – und der Möglichkeit, einzelne Abschnitte nachträglich gezielt umzuplanen.
 
-Routing: [BRouter](https://brouter.de) mit einem aus den Einstellungen generierten Profil · Daten: OpenStreetMap (Overpass, Photon) · Karte: OpenFreeMap · Luftbild: Esri World Imagery und amtliche Luftbilder (RLP, NRW, Hessen, Bayern) · Wind: Open-Meteo · Fotos: Panoramax, optional Mapillary
+Routing: [BRouter](https://brouter.de) mit einem aus den Einstellungen generierten Profil · Daten: OpenStreetMap (Overpass, Photon) · Karte: OpenFreeMap · Luftbild: Esri World Imagery und amtliche Luftbilder (RLP, NRW, Hessen, Bayern) · Wetter & Wind: Open-Meteo · Regenradar: RainViewer · Fotos: Panoramax, optional Mapillary
 
 ## Starten
 
@@ -15,14 +15,15 @@ Dann <http://localhost:5173> öffnen.
 
 ## Bedienung
 
-Die Seitenleiste hat vier Bereiche (Leiste links, auf dem Handy oben):
+Die Seitenleiste hat fünf Bereiche (Leiste links, auf dem Handy oben):
 
 | Bereich | Inhalt |
 |---|---|
-| **Planen** | Route setzen und bearbeiten, Übersicht (Distanz, Anstieg, Belag, Straßenart), Export/Import; darunter Wind, Belags-Check, Anstiege, Stopps und angepasste Etappen als aufklappbare Liste |
+| **Planen** | Route setzen und bearbeiten, Übersicht (Distanz, Anstieg, Belag, Straßenart), Export/Import; darunter Wetter & Wind, Belags-Check, Anstiege, Stopps und angepasste Etappen als aufklappbare Liste |
 | **Entdecken** | Rundtour vorschlagen lassen, Ziele in der Umgebung, beschilderte Radwege |
 | **Meine** | Gespeicherte Routen und eigene Heatmap |
 | **Profil** | Radtyp (Rennrad, Gravel, MTB, Trekking), Voreinstellungen, Belag/Straßenart im Detail, dauerhafte Sperren |
+| **Admin** | Nur mit Anmeldung (Veloterra-Server): Mapillary-Token und BRouter-/Overpass-Server für alle Besucher, GPS-Spuren einer Region für alle vorab laden, Datensicherung als Datei |
 
 Der aktuelle Radtyp steht oben rechts immer sichtbar; ein Klick öffnet das Profil. Die Karte startet immer mit **Luftbild DE**. Oben links auf der Karte: **↶ ↷** (Rückgängig/Wiederholen), **Ebenen** (Kartenstil, Einfärbung, Stopps, Fotos, Radrouten-Netz, Heatmaps) und **Route ausblenden**.
 
@@ -43,7 +44,7 @@ Der aktuelle Radtyp steht oben rechts immer sichtbar; ein Klick öffnet das Prof
 | Luftbild | Ebenen → „Satellit“ (Esri, weltweit) oder **„Luftbild DE“** (amtliche Luftbilder 20–40 cm für RLP, NRW, Hessen, Bayern – schärfer und aktueller) wählen, oder auf die Route klicken → „Im Luftbild ansehen“ |
 | Einfärbung | Ebenen → Untergrund · Straßenart · **Steigung** · **Wind** (Gegen-/Rückenwind zur Abfahrtszeit) · Einfarbig |
 | Anstiege | Liste in der Seitenleiste (Länge, Ø- und Max-Steigung, Höhenmeter); Klick markiert den Anstieg. Im Höhenprofil rot hinterlegt |
-| Wind | Abfahrtszeit wählen → Windrichtung/-stärke, Anteil Gegen-/Rückenwind, Hinweis „heimwärts Rückenwind“ |
+| Wetter & Wind | Abfahrtszeit wählen → Windrichtung/-stärke, Anteil Gegen-/Rückenwind; darunter das Wetter entlang der Route zur jeweiligen Ankunftszeit (Temperatur, Wetterlage, Regenwahrscheinlichkeit). Ebenen → „Regenradar“ zeigt den aktuellen Niederschlag in der Umgebung |
 | Belags-Check | Karte „Belags-Check“: Abschnitte, deren Belag in OSM fehlt oder nur geschätzt ist (Wirtschafts-, Rad- und Feldwege ohne `surface`), auf der Karte weiß gepunktet. Klick → Luftbild DE, Route ausgeblendet, Straßenfoto falls vorhanden. „Passt“ blendet den Abschnitt dauerhaft aus, „Umfahren“ plant drumherum, „In OpenStreetMap eintragen“ öffnet den Editor an der Stelle |
 | Stopps unterwegs | Ebenen → „Stopps unterwegs“: Cafés & Bäcker, Trinkwasser, Rad-Service, Aussichtspunkte, WC bis 300 m neben der Route – mit km-Angabe; „Als Wegpunkt einfügen“ |
 | Fotos der Strecke | Ebenen → „Fotos der Strecke“: Straßenfotos entlang der Route (Panoramax; mit eigenem Mapillary-Token deutlich mehr), Großansicht mit ← → |
@@ -158,10 +159,10 @@ git clone https://github.com/T4s3rF4c3/veloterra.git && cd veloterra
 ```
 
 ```bash
-APPDATA=/mnt/user/appdata/veloterra docker compose up -d
+APPDATA=/mnt/user/appdata/veloterra VELOTERRA_ADMIN_PASSWORD='ein-langes-passwort' docker compose up -d
 ```
 
-Die Datei `docker-compose.yml` startet beide Container; Veloterra erreicht BRouter intern unter `http://brouter:17777`. Mit `build:` lässt sich auch lokal bauen (`docker compose up -d --build`), falls keine fertigen Images genutzt werden sollen.
+Die Datei `docker-compose.yml` startet drei Container; Veloterra erreicht BRouter intern unter `http://brouter:17777` und den Veloterra-Server unter `http://veloterra-api:8787`. Mit `build:` lässt sich auch lokal bauen (`docker compose up -d --build`), falls keine fertigen Images genutzt werden sollen.
 
 ### Einstellungen der Container
 
@@ -171,6 +172,18 @@ Die Datei `docker-compose.yml` startet beide Container; Veloterra erreicht BRout
 |---|---|
 | `BROUTER_UPSTREAM` | Interne Adresse eines eigenen BRouter-Servers. nginx leitet `/brouter` dorthin weiter – der Browser braucht keinen direkten Zugriff, keine CORS-Probleme |
 | `BROUTER_URL` | Alternativ: URL, die der Browser direkt anspricht. Leer = brouter.de |
+| `API_UPSTREAM` | Interne Adresse des Veloterra-Servers. nginx leitet `/api` dorthin weiter. Leer = kein Admin-Bereich, die App läuft nur im Browser |
+
+**Veloterra-API** (Admin-Bereich, optional)
+
+| Variable | Standard | Bedeutung |
+|---|---|---|
+| `ADMIN_PASSWORD` | – | Passwort für den Admin-Bereich. Ohne Passwort ist die Anmeldung gesperrt |
+| `DATA_DIR` | `/data` | Einstellungen (`config.json`) und GPS-Kacheln (`traces/`); als Volume nach appdata einbinden |
+
+Im Admin-Bereich (Zahnrad, nach Anmeldung) gelten Mapillary-Token, BRouter- und Overpass-Server **für alle Besucher**. Unter **„GPS-Spuren für alle“** lädt der Server die öffentlichen GPS-Spuren einer Region – z. B. ganz Rheinland-Pfalz (~480 Kacheln, ca. 1–1,5 Std.) – einmal bei OpenStreetMap, nacheinander und mit Pause, um die Schnittstelle zu schonen. Der Ladevorgang läuft auch weiter, wenn der Browser geschlossen ist. Danach bekommen alle Besucher die Kacheln direkt vom Server; nur was dort fehlt, lädt der Browser noch selbst.
+
+Anmeldung: Sitzungs-Cookie (30 Tage, HttpOnly, SameSite=Strict), höchstens 8 Fehlversuche je Adresse in 15 Minuten. Hinter einem HTTPS-Reverse-Proxy (`X-Forwarded-Proto: https`) wird das Cookie zusätzlich als `Secure` markiert.
 
 **Veloterra-BRouter**
 
@@ -190,8 +203,16 @@ Mit eigenem Server stellt die App bis zu 4 Anfragen gleichzeitig – Rundtour-Su
 VITE_BROUTER_URL=http://localhost:17777/brouter npm run dev
 ```
 
+### Lokal entwickeln mit Veloterra-Server (Admin)
+
+```bash
+ADMIN_PASSWORD=test npm run dev:server   # Port 8787, Daten in ./data-api
+npm run dev                              # leitet /api dorthin weiter
+```
+
 ## Skripte
 
 - `npm test` – Unit-Tests (Vitest)
-- `npm run build` – Produktions-Build
+- `npm run build` – Produktions-Build (Web-App und Veloterra-Server)
+- `npm run build:server` – nur den Veloterra-Server bündeln (`dist-server/server.mjs`)
 - `npx tsx scripts/dump-profile.ts road` – generiertes Profil eines Presets ausgeben

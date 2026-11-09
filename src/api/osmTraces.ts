@@ -1,37 +1,24 @@
 import { create } from 'zustand';
 import type { LngLat } from '../domain/geo';
-import { KINDS, aggregate, cellBbox, cellsFor, quarters, type Bbox, type Bins } from '../domain/traceGrid';
-import { classifyTrace, cleanRuns, densityPoints, isBikeKind, type Trace, type TraceKind } from '../domain/traces';
+import { CACHE_VERSION, fetchCell, zeroCounts, type CellRecord } from '../domain/traceCell';
+import { KINDS, cellBbox, cellsFor, type Bbox } from '../domain/traceGrid';
+import type { TraceKind } from '../domain/traces';
 import { dbAll, dbClear, dbPut } from './db';
+import { serverTraceCells, serverTraceIndex, useSite } from './site';
 
 /**
  * Öffentliche GPS-Spuren von OpenStreetMap, gespeichert in festen Kacheln
  * (0,1° × 0,1°). Einmal geladene Kacheln bleiben im Browser und sind bei
  * jedem Zoom sofort da. Geladen wird nur auf Knopfdruck, nacheinander und
  * mit wenigen Seiten – die OSM-Schnittstelle ist fürs Kartenbearbeiten
- * gedacht, nicht für Massenabfragen.
+ * gedacht, nicht für Massenabfragen. Hat der Veloterra-Server eine Kachel
+ * schon vorab geladen (Admin), kommt sie von dort.
  */
-const API = 'https://api.openstreetmap.org/api/0.6/trackpoints';
 const PAGES = 3;
 const PAGE_TIMEOUT = 18000;
 const FIRST_PAGE_TIMEOUT = 12000;
 /** höchstens so viele neue Kacheln auf einmal (ca. 35 × 45 km) */
 export const MAX_CELLS = 20;
-
-/** Format der gespeicherten Kacheln – ältere werden verworfen und neu geladen */
-const CACHE_VERSION = 2;
-
-interface CellRecord {
-  v: number;
-  id: string;
-  /** geladen am (ms) */
-  at: number;
-  bins: Bins;
-  /** Spuren je Art (gespeichert werden nur Rad-Spuren, die anderen nur gezählt) */
-  counts: Record<TraceKind, number>;
-  /** nicht vollständig (Server zu langsam, Seitenlimit erreicht) */
-  partial: boolean;
-}
 
 interface TracesState {
   /** gespeicherte Kacheln (nur Metadaten) */
@@ -44,7 +31,7 @@ interface TracesState {
   version: number;
 }
 
-const ZERO = (): Record<TraceKind, number> => ({ foot: 0, bike: 0, fast: 0, motor: 0, unknown: 0 });
+const ZERO = zeroCounts;
 
 export const useTraces = create<TracesState>()(() => ({
   cells: {},
@@ -117,91 +104,6 @@ export async function loadTraceCache() {
   publish();
 }
 
-function parsePage(xml: string): Trace[] {
-  const doc = new DOMParser().parseFromString(xml, 'application/xml');
-  const traces: Trace[] = [];
-  for (const seg of Array.from(doc.getElementsByTagName('trkseg'))) {
-    const points: LngLat[] = [];
-    const times: number[] = [];
-    let allTimed = true;
-    for (const p of Array.from(seg.getElementsByTagName('trkpt'))) {
-      const lat = Number(p.getAttribute('lat'));
-      const lon = Number(p.getAttribute('lon'));
-      if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
-      points.push([lon, lat]);
-      const t = p.getElementsByTagName('time')[0]?.textContent;
-      const ms = t ? Date.parse(t) : NaN;
-      if (Number.isFinite(ms)) times.push(ms);
-      else allTimed = false;
-    }
-    if (points.length) traces.push({ points, times: allTimed && times.length === points.length ? times : null });
-  }
-  return traces;
-}
-
-/** Bis zu PAGES Seiten eines Bereichs. Wirft, wenn schon die erste Seite scheitert. */
-async function fetchArea(b: Bbox, signal: AbortSignal): Promise<{ traces: Trace[]; partial: boolean }> {
-  const box = b.map((v) => v.toFixed(5)).join(',');
-  const traces: Trace[] = [];
-  for (let page = 0; page < PAGES; page++) {
-    const timeout = AbortSignal.timeout(page === 0 ? FIRST_PAGE_TIMEOUT : PAGE_TIMEOUT);
-    try {
-      const res = await fetch(`${API}?bbox=${box}&page=${page}`, { signal: AbortSignal.any([signal, timeout]) });
-      if (!res.ok) throw new Error(`Fehler ${res.status}`);
-      const pageTraces = parsePage(await res.text());
-      traces.push(...pageTraces);
-      if (pageTraces.reduce((a, t) => a + t.points.length, 0) < 5000) return { traces, partial: false };
-    } catch (e) {
-      if (signal.aborted) throw e;
-      if (page === 0) throw new Error(timeout.aborted ? 'Server zu langsam' : (e as Error).message);
-      return { traces, partial: true };
-    }
-  }
-  // Seitenlimit erreicht – es gäbe noch mehr Punkte
-  return { traces, partial: true };
-}
-
-/** Eine Kachel laden; ist das Gebiet zu dicht, in Vierteln. */
-async function fetchCell(id: string, signal: AbortSignal): Promise<CellRecord> {
-  let parts: { traces: Trace[]; partial: boolean }[];
-  try {
-    parts = [await fetchArea(cellBbox(id), signal)];
-  } catch (e) {
-    if (signal.aborted) throw e;
-    parts = [];
-    for (const q of quarters(cellBbox(id))) {
-      try {
-        parts.push(await fetchArea(q, signal));
-      } catch (e2) {
-        if (signal.aborted) throw e2;
-        parts.push({ traces: [], partial: true });
-      }
-    }
-    if (parts.every((p) => !p.traces.length)) throw e;
-  }
-  const counts = ZERO();
-  const points: { coord: LngLat; kind: TraceKind; trace: number }[] = [];
-  let trace = 0;
-  for (const p of parts) {
-    for (const t of p.traces) {
-      const kind = classifyTrace(t);
-      counts[kind]++;
-      trace++;
-      // nur Radfahrten, und nur ihre plausiblen Stücke
-      if (!isBikeKind(kind)) continue;
-      for (const run of cleanRuns(t)) for (const coord of densityPoints(run)) points.push({ coord, kind, trace });
-    }
-  }
-  return {
-    v: CACHE_VERSION,
-    id,
-    at: Date.now(),
-    bins: aggregate(points),
-    counts,
-    partial: parts.some((p) => p.partial),
-  };
-}
-
 let ctrl: AbortController | null = null;
 
 export function cancelTraces() {
@@ -223,6 +125,8 @@ export async function loadRegion(view: Bbox, refresh = false) {
   ctrl?.abort();
   const abort = new AbortController();
   ctrl = abort;
+  if (!refresh) await syncFromServer(view);
+  if (ctrl !== abort) return;
   const ids = cellsFor(view).filter((id) => refresh || !data.has(id));
   if (ids.length > MAX_CELLS) {
     useTraces.setState({
@@ -236,7 +140,12 @@ export async function loadRegion(view: Bbox, refresh = false) {
   for (let i = 0; i < ids.length; i++) {
     useTraces.setState({ loading: { done: i, total: ids.length } });
     try {
-      const rec = await fetchCell(ids[i], abort.signal);
+      const rec = await fetchCell(ids[i], abort.signal, {
+        fetch: (...a) => fetch(...a),
+        pages: PAGES,
+        firstPageTimeout: FIRST_PAGE_TIMEOUT,
+        pageTimeout: PAGE_TIMEOUT,
+      });
       if (abort.signal.aborted) break;
       data.set(rec.id, rec);
       await dbPut('traces', [rec]).catch(() => undefined);
@@ -254,6 +163,38 @@ export async function loadRegion(view: Bbox, refresh = false) {
       ? `${failed.length} von ${ids.length} Kacheln konnten nicht geladen werden (OpenStreetMap-Server überlastet) – später nochmal „Bereich laden“.`
       : null,
   });
+}
+
+let serverIndex: Promise<Map<string, { at: number; partial: boolean }>> | null = null;
+
+/**
+ * Vom Veloterra-Server vorab geladene Kacheln des Ausschnitts übernehmen:
+ * die, die hier fehlen oder dort neuer sind. Ohne Server passiert nichts.
+ */
+export async function syncFromServer(view: Bbox) {
+  if (!useSite.getState().available) return;
+  serverIndex ??= serverTraceIndex().catch(() => new Map());
+  const index = await serverIndex;
+  const ids = cellsFor(view).filter((id) => {
+    const s = index.get(id);
+    const local = data.get(id);
+    return s && (!local || local.at < s.at);
+  });
+  for (let i = 0; i < ids.length; i += 40) {
+    try {
+      const recs = (await serverTraceCells(ids.slice(i, i + 40))).filter((r) => r.v === CACHE_VERSION);
+      for (const r of recs) data.set(r.id, r);
+      await dbPut('traces', recs).catch(() => undefined);
+      publish();
+    } catch {
+      return;
+    }
+  }
+}
+
+/** Nach einem Lauf im Admin: Übersicht des Servers neu holen. */
+export function refreshServerIndex() {
+  serverIndex = null;
 }
 
 export async function clearTraceCache() {

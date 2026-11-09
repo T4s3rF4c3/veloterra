@@ -142,7 +142,7 @@
       "dest": {
         "role": "semantic",
         "displayName": "Ziel-Rot",
-        "canonical": "#ea4335",
+        "canonical": "#d93025",
         "oklch": "oklch(62.6% 0.206 29)",
         "tonalRamp": [
           "#1c0201",

@@ -1,5 +1,5 @@
 # Baut die Container-Images und veröffentlicht sie in der GitHub Container
-# Registry (ghcr.io/<besitzer>/veloterra und …/veloterra-brouter).
+# Registry (ghcr.io/<besitzer>/veloterra, …/veloterra-brouter und …/veloterra-api).
 name: Docker-Images
 
 on:
@@ -36,6 +36,9 @@ jobs:
             context: .
           - name: veloterra-brouter
             context: docker/brouter
+          - name: veloterra-api
+            context: .
+            file: docker/api/Dockerfile
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3
@@ -56,6 +59,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.context }}
+          file: ${{ matrix.file || format('{0}/Dockerfile', matrix.context) }}
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}

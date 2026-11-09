@@ -29,3 +29,7 @@ dist-ssr
 
 # lokale Kartendaten aus docker compose
 /data
+
+# Veloterra-Server: gebaute Datei und lokale Daten
+dist-server
+data-api
