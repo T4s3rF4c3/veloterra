@@ -6,7 +6,7 @@ import type { Pref, RoutingSettings, SurfaceCat } from './settings';
 export const LENGTH_PER_RADIUS = 5.5;
 
 /** Farben der Vorschläge auf Karte und in der Liste */
-export const SUGGESTION_COLORS = ['#2563eb', '#db2777', '#16a34a', '#ea580c', '#7c3aed', '#0891b2'];
+export const SUGGESTION_COLORS = ['#4dabf7', '#f783ac', '#63e6be', '#ffa94d', '#ffd43b', '#66d9e8'];
 
 export type Direction = number | 'any';
 export type Ranking = 'quality' | 'flat' | 'hilly' | 'wind' | 'novel';

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useHeat } from '../api/heatStore';
 import { GpsTracesOptions } from './GpsTraces';
+import { Icon, type IconName } from './Icon';
 import { redo, undo, useHistory } from '../history';
 import { useStore, type Basemap, type ColorMode } from '../store';
 
@@ -20,12 +21,26 @@ const COLOR_MODES: { value: ColorMode; label: string }[] = [
   { value: 'plain', label: 'Einfarbig' },
 ];
 
-function Toggle({ on, onChange, label, hint }: { on: boolean; onChange: () => void; label: string; hint: string }) {
+function Toggle({
+  on,
+  onChange,
+  icon,
+  label,
+  hint,
+}: {
+  on: boolean;
+  onChange: () => void;
+  icon: IconName;
+  label: string;
+  hint: string;
+}) {
   return (
     <button className={`layer-toggle ${on ? 'on' : ''}`} onClick={onChange} role="switch" aria-checked={on}>
       <span className="switch" aria-hidden />
       <span>
-        {label}
+        <span className="layer-label">
+          <Icon name={icon} size={15} /> {label}
+        </span>
         <small>{hint}</small>
       </span>
     </button>
@@ -81,7 +96,7 @@ export function MapToolbar({
       {routeMode && (
         <div className="choice history">
           <button onClick={undo} disabled={!canUndo} title={`Rückgängig (${key}Z)`} aria-label="Rückgängig">
-            ↶
+            <Icon name="undo" />
           </button>
           <button
             onClick={redo}
@@ -89,14 +104,14 @@ export function MapToolbar({
             title={`Wiederholen (${key}${mac ? '⇧Z' : 'Y'})`}
             aria-label="Wiederholen"
           >
-            ↷
+            <Icon name="redo" />
           </button>
         </div>
       )}
 
       <div className="layers" ref={ref}>
         <button className={`tool-btn ${open ? 'on' : ''}`} onClick={() => setOpen(!open)} aria-expanded={open}>
-          <span aria-hidden>◫</span> Ebenen
+          <Icon name="layers" /> Ebenen
           {routeMode && hasRoute && <small>· {COLOR_MODES.find((c) => c.value === colorMode)?.label}</small>}
         </button>
         {open && (
@@ -139,13 +154,15 @@ export function MapToolbar({
                 <Toggle
                   on={showStops}
                   onChange={() => st().setShowStops(!showStops)}
-                  label="☕ Stopps unterwegs"
+                  icon="coffee"
+                  label="Stopps unterwegs"
                   hint="Cafés, Trinkwasser, Rad-Service an der Route"
                 />
                 <Toggle
                   on={showPhotos}
                   onChange={() => st().setShowPhotos(!showPhotos)}
-                  label="📷 Fotos der Strecke"
+                  icon="camera"
+                  label="Fotos der Strecke"
                   hint="Straßenfotos über dem Höhenprofil"
                 />
               </>
@@ -155,13 +172,15 @@ export function MapToolbar({
                 <Toggle
                   on={netOverlay === 'cycling'}
                   onChange={() => st().setNetOverlay(netOverlay === 'cycling' ? 'off' : 'cycling')}
-                  label="🚲 Beschilderte Radrouten"
+                  icon="signpost"
+                  label="Beschilderte Radrouten"
                   hint="Radfernwege und regionale Routen"
                 />
                 <Toggle
                   on={netOverlay === 'mtb'}
                   onChange={() => st().setNetOverlay(netOverlay === 'mtb' ? 'off' : 'mtb')}
-                  label="🚵 MTB-Routen"
+                  icon="mountain"
+                  label="MTB-Routen"
                   hint="Ausgeschilderte Mountainbike-Strecken"
                 />
               </>
@@ -170,13 +189,15 @@ export function MapToolbar({
             <Toggle
               on={showMyHeat && heatCount > 0}
               onChange={() => heatCount > 0 && st().setShowMyHeat(!showMyHeat)}
-              label="🔥 Meine Fahrten"
+              icon="flame"
+              label="Meine Fahrten"
               hint={heatCount ? `${heatCount} importierte Fahrten` : 'Erst unter „Meine Heatmap“ importieren'}
             />
             <Toggle
               on={showGpsTraces}
               onChange={() => st().setShowGpsTraces(!showGpsTraces)}
-              label="🗺️ Öffentliche GPS-Spuren"
+              icon="map"
+              label="Öffentliche GPS-Spuren"
               hint="Hochgeladene Tracks aus OpenStreetMap – zeigt, wo viel gefahren wird"
             />
             {showGpsTraces && <GpsTracesOptions bounds={bounds} />}
@@ -189,8 +210,10 @@ export function MapToolbar({
           className={`tool-btn ${hideRoute ? 'on' : ''}`}
           onClick={() => st().setHideRoute(!hideRoute)}
           title="Route ausblenden, um die Straße darunter zu sehen (Taste H)"
+          aria-label={hideRoute ? 'Route zeigen' : 'Route ausblenden'}
         >
-          {hideRoute ? '◌ Route zeigen' : '◉ Route ausblenden'}
+          <Icon name={hideRoute ? 'eye' : 'eye-off'} />
+          <span className="tool-label">{hideRoute ? 'Route zeigen' : 'Route ausblenden'}</span>
         </button>
       )}
     </div>

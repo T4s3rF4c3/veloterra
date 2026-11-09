@@ -4,6 +4,7 @@ import { bearing, destination, formatKm, type LngLat } from '../domain/geo';
 import { DESTINATION_CATEGORIES, radiusQuery, rankDestinations, type DestinationSort, type Poi } from '../domain/poi';
 import { compassLabel } from '../domain/wind';
 import { useStore } from '../store';
+import { Icon } from './Icon';
 
 /** höchstens so viele Ziele anzeigen (Karte bleibt übersichtlich) */
 const MAX = 60;
@@ -133,7 +134,7 @@ export function ExplorePanel({ fly, fit }: { fly: (c: LngLat, z?: number) => voi
       <div className="chips">
         {DESTINATION_CATEGORIES.map((c) => (
           <button key={c.key} className={options.categories.includes(c.key) ? 'on' : ''} onClick={() => toggle(c.key)}>
-            {c.icon} {c.label}
+            <Icon name={c.icon} size={14} /> {c.label}
           </button>
         ))}
       </div>
@@ -193,7 +194,9 @@ export function ExplorePanel({ fly, fit }: { fly: (c: LngLat, z?: number) => voi
                 fly(p.coord, 13);
               }}
             >
-              <span className="poi-icon small">{p.icon}</span>
+              <span className="poi-icon small">
+                <Icon name={p.icon} size={18} />
+              </span>
               <div className="sugg-main">
                 <div className="sugg-head">
                   <b className="poi-name">{p.name}</b>

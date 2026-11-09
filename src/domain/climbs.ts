@@ -1,12 +1,12 @@
 /** Steigungsklassen für Karte, Höhenprofil und Legende. */
 export const GRADE_CLASSES: { key: string; label: string; min: number; color: string }[] = [
-  { key: 'down', label: 'Gefälle', min: -Infinity, color: '#38bdf8' },
-  { key: 'flat', label: '< 2 %', min: -2, color: '#22c55e' },
-  { key: 'g2', label: '2–4 %', min: 2, color: '#a3e635' },
-  { key: 'g4', label: '4–6 %', min: 4, color: '#facc15' },
-  { key: 'g6', label: '6–8 %', min: 6, color: '#f97316' },
-  { key: 'g8', label: '8–11 %', min: 8, color: '#dc2626' },
-  { key: 'g11', label: '> 11 %', min: 11, color: '#7f1d1d' },
+  { key: 'down', label: 'Gefälle', min: -Infinity, color: '#74c0fc' },
+  { key: 'flat', label: '< 2 %', min: -2, color: '#63e6be' },
+  { key: 'g2', label: '2–4 %', min: 2, color: '#c0eb75' },
+  { key: 'g4', label: '4–6 %', min: 4, color: '#ffd43b' },
+  { key: 'g6', label: '6–8 %', min: 6, color: '#ff922b' },
+  { key: 'g8', label: '8–11 %', min: 8, color: '#ff6b6b' },
+  { key: 'g11', label: '> 11 %', min: 11, color: '#e64980' },
 ];
 
 export function gradeClass(g: number) {

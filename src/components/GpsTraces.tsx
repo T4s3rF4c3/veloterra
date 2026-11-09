@@ -1,6 +1,7 @@
 import { MAX_CELLS, cancelTraces, clearTraceCache, loadRegion, regionStatus, useTraces } from '../api/osmTraces';
 import { CELL } from '../domain/traceGrid';
 import { useStore } from '../store';
+import { Icon } from './Icon';
 
 const FILTERS: { value: 'bike' | 'fast'; label: string; hint: string }[] = [
   { value: 'bike', label: 'Alle Rad-Spuren', hint: 'Spuren mit Rad-Tempo (Median 7,5–38 km/h)' },
@@ -74,7 +75,9 @@ export function GpsTracesOptions({ bounds }: { bounds: () => [number, number, nu
               Bereich laden ({status.missing} {status.missing === 1 ? 'Kachel' : 'Kacheln'})
             </button>
           ) : status ? (
-            <p className="small good-tag">✓ Sichtbarer Bereich ist gespeichert</p>
+            <p className="small good-tag">
+              <Icon name="check" size={13} /> Sichtbarer Bereich ist gespeichert
+            </p>
           ) : null}
           {status && status.missing > MAX_CELLS && !loading && (
             <p className="muted small">
@@ -105,7 +108,7 @@ export function GpsTracesOptions({ bounds }: { bounds: () => [number, number, nu
                     onClick={() => b && loadRegion(b, true)}
                     title="Kacheln des sichtbaren Bereichs neu von OpenStreetMap laden"
                   >
-                    ↻ Bereich aktualisieren
+                    <Icon name="refresh" size={14} /> Bereich aktualisieren
                   </button>
                 )}
                 <button

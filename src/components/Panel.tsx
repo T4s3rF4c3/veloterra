@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { Icon, type IconName } from './Icon';
 
 const KEY = 'veloterra-panels';
 
@@ -30,11 +31,12 @@ export function Panel({
   badge,
   defaultOpen = false,
   actions,
+  tone,
   children,
 }: {
   id: string;
   title: string;
-  icon?: string;
+  icon?: IconName;
   /** kurze Info im zugeklappten Zustand */
   summary?: ReactNode;
   /** Zähler/Hinweis rechts im Kopf */
@@ -42,6 +44,8 @@ export function Panel({
   defaultOpen?: boolean;
   /** Knöpfe im Kopf (z. B. Schließen) */
   actions?: ReactNode;
+  /** Hervorhebung, z. B. offene Hinweise */
+  tone?: 'warn';
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(() => readOpen()[id] ?? defaultOpen);
@@ -50,12 +54,12 @@ export function Panel({
     writeOpen(id, !open);
   };
   return (
-    <section className={`card panel ${open ? 'open' : ''}`}>
+    <section className={`card panel ${open ? 'open' : ''} ${tone ? `tone-${tone}` : ''}`}>
       <div className="panel-head">
         <button className="panel-toggle-btn" onClick={toggle} aria-expanded={open}>
           {icon && (
             <span className="panel-icon" aria-hidden>
-              {icon}
+              <Icon name={icon} size={18} />
             </span>
           )}
           <span className="panel-title">
@@ -63,9 +67,7 @@ export function Panel({
             {!open && summary && <small>{summary}</small>}
           </span>
           {badge !== undefined && badge !== null && badge !== false && <span className="panel-badge">{badge}</span>}
-          <span className="chev" aria-hidden>
-            ›
-          </span>
+          <Icon name="chevron-right" className="chev" />
         </button>
         {actions}
       </div>

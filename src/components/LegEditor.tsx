@@ -1,6 +1,7 @@
 import { legKey } from '../domain/route';
 import { useStore } from '../store';
 import { SettingsEditor } from './SettingsEditor';
+import { Icon } from './Icon';
 
 /** Panel, um die Einstellungen eines einzelnen Abschnitts anzupassen. */
 export function LegEditor() {
@@ -31,7 +32,7 @@ export function LegEditor() {
           </p>
         </div>
         <button className="ghost" onClick={() => st().setEditingLeg(null)} aria-label="Schließen">
-          ✕
+          <Icon name="x" />
         </button>
       </div>
       <SettingsEditor

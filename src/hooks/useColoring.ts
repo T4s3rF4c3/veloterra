@@ -30,8 +30,8 @@ export interface LegendItem {
 
 const SURFACE_COLOR = Object.fromEntries(SURFACES.map((s) => [s.key, s.color]));
 const ROAD_COLOR = Object.fromEntries(ROADS.map((r) => [r.key, r.color]));
-export const PLAIN = '#2563eb';
-const NOVELTY_COLORS = { new: '#ea580c', known: '#64748b' };
+export const PLAIN = '#8ab4f8';
+const NOVELTY_COLORS = { new: '#fcad70', known: '#9aa0a6' };
 
 /** Aufeinanderfolgende Punkte gleicher Klasse zu Abschnitten zusammenfassen. */
 function group(n: number, keyOf: (i: number) => string, colorOf: (k: string) => string): Piece[] {

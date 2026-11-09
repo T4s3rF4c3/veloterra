@@ -4,6 +4,7 @@ import { formatKm, type LngLat } from '../domain/geo';
 import type { CombinedRoute } from '../domain/route';
 import { restoreLegs, snapshotLegs } from '../hooks/useRouting';
 import { useStore } from '../store';
+import { Icon } from './Icon';
 
 /** Etappen gespeicherter Routen liegen getrennt, damit die Liste klein bleibt. */
 const legsKey = (id: string) => `bike-planner-route-${id}`;
@@ -28,56 +29,77 @@ function load(id: string) {
   useStore.getState().loadRoute(id);
 }
 
-/** Gespeicherte Routen: speichern, laden, umbenennen, löschen. */
-export function Library({ route, fit }: { route: CombinedRoute | null; fit: (c: LngLat[]) => void }) {
+/** Name und Speichern – in „Meine Routen“ und direkt über dem Export. */
+export function SaveRow({ route }: { route: CombinedRoute | null }) {
   const library = useStore((s) => s.library);
   const savedId = useStore((s) => s.savedId);
   const name = useStore((s) => s.routeName);
   const waypoints = useStore((s) => s.waypoints);
   const overrides = useStore((s) => s.overrides);
   const st = useStore.getState;
-  const [editing, setEditing] = useState<string | null>(null);
-  const [draft, setDraft] = useState('');
   const saved = library.find((r) => r.id === savedId);
   // geändert seit dem Speichern?
   const dirty = !saved || JSON.stringify([saved.waypoints, saved.overrides]) !== JSON.stringify([waypoints, overrides]);
+  const upToDate = !!saved && !dirty && saved.name === name;
+  return (
+    <div className="save-row">
+      <input
+        value={name}
+        onChange={(e) => st().setRouteName(e.target.value)}
+        placeholder="Name der Route"
+        aria-label="Name der Route"
+        onKeyDown={(e) => e.key === 'Enter' && route && save(route)}
+      />
+      <button
+        className={upToDate ? 'saved' : 'unsaved'}
+        disabled={!route || upToDate}
+        onClick={() => route && save(route)}
+        title={saved ? 'Änderungen speichern' : 'In „Meine Routen“ speichern'}
+      >
+        {upToDate ? (
+          <>
+            <Icon name="check" size={14} /> Gespeichert
+          </>
+        ) : (
+          <>
+            <i className="dirty-dot" aria-hidden /> Speichern
+          </>
+        )}
+      </button>
+      {saved && (
+        <button
+          className="mini ghost"
+          disabled={!route}
+          onClick={() => route && save(route, true)}
+          title="Als neue Route speichern"
+        >
+          Kopie
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** Gespeicherte Routen: speichern, laden, umbenennen, löschen. */
+export function Library({ route, fit }: { route: CombinedRoute | null; fit: (c: LngLat[]) => void }) {
+  const library = useStore((s) => s.library);
+  const savedId = useStore((s) => s.savedId);
+  const waypoints = useStore((s) => s.waypoints);
+  const st = useStore.getState;
+  const [editing, setEditing] = useState<string | null>(null);
+  const [draft, setDraft] = useState('');
+  const saved = library.find((r) => r.id === savedId);
 
   return (
     <Panel
       id="library"
-      icon="📁"
+      defaultOpen
+      icon="folder"
       title="Meine Routen"
       badge={library.length || undefined}
       summary={saved ? `geladen: ${saved.name}` : library.length ? 'gespeicherte Routen laden' : 'Route speichern'}
     >
-      {waypoints.length >= 2 && (
-        <div className="save-row">
-          <input
-            value={name}
-            onChange={(e) => st().setRouteName(e.target.value)}
-            placeholder="Name der Route"
-            onKeyDown={(e) => e.key === 'Enter' && route && save(route)}
-          />
-          <button
-            className="primary"
-            disabled={!route || (!dirty && saved?.name === name)}
-            onClick={() => route && save(route)}
-            title={saved ? 'Änderungen speichern' : 'In „Meine Routen“ speichern'}
-          >
-            {saved && !dirty && saved.name === name ? 'Gespeichert ✓' : 'Speichern'}
-          </button>
-          {saved && (
-            <button
-              className="mini ghost"
-              disabled={!route}
-              onClick={() => route && save(route, true)}
-              title="Als neue Route speichern"
-            >
-              Kopie
-            </button>
-          )}
-        </div>
-      )}
+      {waypoints.length >= 2 && <SaveRow route={route} />}
       {library.length === 0 ? (
         <p className="muted small">Noch keine Routen gespeichert. Alles bleibt in diesem Browser.</p>
       ) : (
@@ -121,7 +143,7 @@ export function Library({ route, fit }: { route: CombinedRoute | null; fit: (c: 
                 }}
                 title="Umbenennen"
               >
-                ✎
+                <Icon name="pencil" size={14} />
               </button>
               <button
                 className="mini"
@@ -133,7 +155,7 @@ export function Library({ route, fit }: { route: CombinedRoute | null; fit: (c: 
                 }}
                 title="Löschen"
               >
-                ✕
+                <Icon name="x" size={14} />
               </button>
             </li>
           ))}

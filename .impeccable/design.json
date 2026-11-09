@@ -1,0 +1,712 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-09T12:00:00Z",
+  "title": "Design System: Veloterra",
+  "extensions": {
+    "colorMeta": {
+      "accent": {
+        "role": "primary",
+        "displayName": "Nachtblau-Hell",
+        "canonical": "#8ab4f8",
+        "oklch": "oklch(76.6% 0.108 260)",
+        "tonalRamp": [
+          "#2a2f38",
+          "#394457",
+          "#4f6a9a",
+          "#6d93d8",
+          "#8ab4f8",
+          "#aecbfa",
+          "#d2e3fc",
+          "#e8f0fe"
+        ],
+        "note": "Ramp aus den Projekt-Tokens accent-tint, accent-soft, accent, accent-strong, accent-ink ergänzt."
+      },
+      "surface-class-1": {
+        "role": "secondary",
+        "displayName": "Klasse 1 Glatt",
+        "canonical": "#4dabf7",
+        "oklch": "oklch(71.8% 0.142 246)",
+        "tonalRamp": [
+          "#000c1b",
+          "#00233e",
+          "#023d65",
+          "#035f99",
+          "#1b83cc",
+          "#57a8ec",
+          "#99cdfc",
+          "#e2f1fe"
+        ],
+        "note": "Routenblau: Asphalt, Beton."
+      },
+      "surface-class-2": {
+        "role": "secondary",
+        "displayName": "Klasse 2 Pflaster glatt",
+        "canonical": "#66d9e8",
+        "oklch": "oklch(82.4% 0.106 207)",
+        "tonalRamp": [
+          "#000e10",
+          "#01272c",
+          "#01434a",
+          "#056771",
+          "#088d9b",
+          "#4db2bf",
+          "#96d4dc",
+          "#dbf4f7"
+        ],
+        "note": "Cyan."
+      },
+      "surface-class-3": {
+        "role": "secondary",
+        "displayName": "Klasse 3 Feiner Schotter",
+        "canonical": "#ffd43b",
+        "oklch": "oklch(88.3% 0.165 92)",
+        "tonalRamp": [
+          "#100a00",
+          "#2a2100",
+          "#483900",
+          "#6e5805",
+          "#967a07",
+          "#c29e05",
+          "#dec67a",
+          "#f8eed0"
+        ],
+        "note": "Auf Karte, Streckenband und Legenden mit dunkler Strich-Textur (Klassen 3–5)."
+      },
+      "surface-class-4": {
+        "role": "secondary",
+        "displayName": "Klasse 4 Rau",
+        "canonical": "#ff922b",
+        "oklch": "oklch(76.2% 0.169 58)",
+        "tonalRamp": [
+          "#160700",
+          "#361901",
+          "#592d02",
+          "#884802",
+          "#b96403",
+          "#e6862f",
+          "#f9b785",
+          "#ffeadb"
+        ],
+        "note": "Kopfsteinpflaster, Schotter. Auf Karte, Streckenband und Legenden mit dunkler Strich-Textur (Klassen 3–5)."
+      },
+      "surface-class-5": {
+        "role": "secondary",
+        "displayName": "Klasse 5 Unbefestigt",
+        "canonical": "#ff6b6b",
+        "oklch": "oklch(71.2% 0.181 23)",
+        "tonalRamp": [
+          "#1f0002",
+          "#460108",
+          "#710615",
+          "#a3232c",
+          "#d34347",
+          "#f67271",
+          "#feb0ab",
+          "#fee9e7"
+        ],
+        "note": "Auf Karte, Streckenband und Legenden mit dunkler Strich-Textur (Klassen 3–5)."
+      },
+      "road-track": {
+        "role": "tertiary",
+        "displayName": "Wirtschaftsweg-Erdbraun",
+        "canonical": "#c9a27e",
+        "oklch": "oklch(73.9% 0.067 64)",
+        "tonalRamp": [
+          "#120903",
+          "#2e1e0e",
+          "#4d351d",
+          "#735436",
+          "#9a7552",
+          "#bd9a7a",
+          "#dbc2ad",
+          "#f7ece3"
+        ],
+        "note": "Im Streckenband gestreift."
+      },
+      "road-path": {
+        "role": "tertiary",
+        "displayName": "Pfad-Rosa",
+        "canonical": "#f783ac",
+        "oklch": "oklch(75.0% 0.147 359)",
+        "tonalRamp": [
+          "#1b020b",
+          "#3e0b21",
+          "#651a39",
+          "#923459",
+          "#c0527c",
+          "#e37ca0",
+          "#f8b0c6",
+          "#ffe7ee"
+        ]
+      },
+      "dest": {
+        "role": "semantic",
+        "displayName": "Ziel-Rot",
+        "canonical": "#ea4335",
+        "oklch": "oklch(62.6% 0.206 29)",
+        "tonalRamp": [
+          "#1c0201",
+          "#480c07",
+          "#781a13",
+          "#ad2a20",
+          "#e23e30",
+          "#fb7767",
+          "#ffa99a",
+          "#ffdace"
+        ]
+      },
+      "revision": {
+        "role": "semantic",
+        "displayName": "Revisions-Violett",
+        "canonical": "#c58af9",
+        "oklch": "oklch(73.5% 0.165 307)",
+        "tonalRamp": [
+          "#100618",
+          "#2f1a40",
+          "#51306c",
+          "#76489c",
+          "#9d63cd",
+          "#bb8ee5",
+          "#dbb8fc",
+          "#fbe3ff"
+        ]
+      },
+      "forbid": {
+        "role": "semantic",
+        "displayName": "Sperren",
+        "canonical": "#f28b82",
+        "oklch": "oklch(74.5% 0.127 26)",
+        "tonalRamp": [
+          "#160605",
+          "#3c1916",
+          "#662f2b",
+          "#934741",
+          "#c2615a",
+          "#dd8c84",
+          "#f8b6af",
+          "#ffe2dc"
+        ]
+      },
+      "import": {
+        "role": "semantic",
+        "displayName": "Import-Magenta",
+        "canonical": "#e58cf0",
+        "oklch": "oklch(76.7% 0.166 323)",
+        "tonalRamp": [
+          "#130515",
+          "#351739",
+          "#5c2b62",
+          "#85428d",
+          "#b05bba",
+          "#cd87d5",
+          "#e9b3f0",
+          "#ffe0ff"
+        ]
+      },
+      "bg": {
+        "role": "neutral",
+        "displayName": "Seitengrund",
+        "tonalRamp": [
+          "#18191b",
+          "#202124",
+          "#26272a",
+          "#2d2e31",
+          "#3c4043",
+          "#5f6368",
+          "#9aa0a6",
+          "#e8eaed"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Panel",
+        "tonalRamp": [
+          "#18191b",
+          "#202124",
+          "#26272a",
+          "#2d2e31",
+          "#3c4043",
+          "#5f6368",
+          "#9aa0a6",
+          "#e8eaed"
+        ]
+      },
+      "panel-tint": {
+        "role": "neutral",
+        "displayName": "Panel aufgeklappt",
+        "tonalRamp": [
+          "#18191b",
+          "#202124",
+          "#26272a",
+          "#2d2e31",
+          "#3c4043",
+          "#5f6368",
+          "#9aa0a6",
+          "#e8eaed"
+        ]
+      },
+      "soft": {
+        "role": "neutral",
+        "displayName": "Weich",
+        "tonalRamp": [
+          "#18191b",
+          "#202124",
+          "#26272a",
+          "#2d2e31",
+          "#3c4043",
+          "#5f6368",
+          "#9aa0a6",
+          "#e8eaed"
+        ]
+      },
+      "sunk": {
+        "role": "neutral",
+        "displayName": "Versenkt",
+        "tonalRamp": [
+          "#18191b",
+          "#202124",
+          "#26272a",
+          "#2d2e31",
+          "#3c4043",
+          "#5f6368",
+          "#9aa0a6",
+          "#e8eaed"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Trennlinie",
+        "tonalRamp": [
+          "#18191b",
+          "#202124",
+          "#26272a",
+          "#2d2e31",
+          "#3c4043",
+          "#5f6368",
+          "#9aa0a6",
+          "#e8eaed"
+        ]
+      },
+      "track": {
+        "role": "neutral",
+        "displayName": "Spur",
+        "tonalRamp": [
+          "#18191b",
+          "#202124",
+          "#26272a",
+          "#2d2e31",
+          "#3c4043",
+          "#5f6368",
+          "#9aa0a6",
+          "#e8eaed"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Gedämpft",
+        "tonalRamp": [
+          "#18191b",
+          "#202124",
+          "#26272a",
+          "#2d2e31",
+          "#3c4043",
+          "#5f6368",
+          "#9aa0a6",
+          "#e8eaed"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Text",
+        "tonalRamp": [
+          "#18191b",
+          "#202124",
+          "#26272a",
+          "#2d2e31",
+          "#3c4043",
+          "#5f6368",
+          "#9aa0a6",
+          "#e8eaed"
+        ]
+      },
+      "road-primary": {
+        "role": "tertiary",
+        "displayName": "Bundesstraße",
+        "canonical": "#ff6b6b",
+        "oklch": "oklch(71.2% 0.181 23)",
+        "tonalRamp": [
+          "#1f0002",
+          "#460108",
+          "#710615",
+          "#a3232c",
+          "#d34347",
+          "#f67271",
+          "#feb0ab",
+          "#fee9e7"
+        ],
+        "note": "Verkehr warm: je mehr Autoverkehr, desto wärmer."
+      },
+      "road-secondary": {
+        "role": "tertiary",
+        "displayName": "Landstraße",
+        "canonical": "#ff922b",
+        "oklch": "oklch(76.2% 0.169 58)",
+        "tonalRamp": [
+          "#160700",
+          "#361901",
+          "#592d02",
+          "#884802",
+          "#b96403",
+          "#e6862f",
+          "#f9b785",
+          "#ffeadb"
+        ]
+      },
+      "road-tertiary": {
+        "role": "tertiary",
+        "displayName": "Kreisstraße",
+        "canonical": "#ffd43b",
+        "oklch": "oklch(88.3% 0.165 92)",
+        "tonalRamp": [
+          "#100a00",
+          "#2a2100",
+          "#483900",
+          "#6e5805",
+          "#967a07",
+          "#c29e05",
+          "#dec67a",
+          "#f8eed0"
+        ]
+      },
+      "road-minor": {
+        "role": "tertiary",
+        "displayName": "Nebenstraße",
+        "canonical": "#dee2e6",
+        "oklch": "oklch(91.1% 0.007 248)",
+        "tonalRamp": [
+          "#0a0b0c",
+          "#202223",
+          "#383b3d",
+          "#585b5e",
+          "#7a7e81",
+          "#9ea2a5",
+          "#c5c7ca",
+          "#edeeef"
+        ],
+        "note": "Ruhige Straße, hellgrau."
+      },
+      "road-residential": {
+        "role": "tertiary",
+        "displayName": "Wohnstraße",
+        "canonical": "#a5b4c4",
+        "oklch": "oklch(76.3% 0.028 250)",
+        "tonalRamp": [
+          "#080c0f",
+          "#1c2229",
+          "#323c45",
+          "#505c69",
+          "#717f8e",
+          "#96a3b1",
+          "#bfc8d2",
+          "#ebeff3"
+        ],
+        "note": "Ruhige Straße, blaugrau."
+      },
+      "road-cycleway": {
+        "role": "tertiary",
+        "displayName": "Radweg-Mint",
+        "canonical": "#63e6be",
+        "oklch": "oklch(84.1% 0.130 170)",
+        "tonalRamp": [
+          "#000f09",
+          "#00291e",
+          "#004635",
+          "#006b53",
+          "#059373",
+          "#44b996",
+          "#93d8c0",
+          "#daf6eb"
+        ],
+        "note": "Hebt sich vom Routenblau des Belags ab."
+      },
+      "surface-unknown": {
+        "role": "secondary",
+        "displayName": "Unbekannt (schraffiert)",
+        "canonical": "#adb5bd",
+        "oklch": "oklch(76.9% 0.015 248)",
+        "tonalRamp": [
+          "#090b0d",
+          "#1f2225",
+          "#363b40",
+          "#555c62",
+          "#777e86",
+          "#9ba2a9",
+          "#c3c8cd",
+          "#edeff1"
+        ],
+        "note": "Nie Vollfläche: im Band und in Legenden repeating-linear-gradient(45deg, #80868b 0 2px, #303134 2px 4px) (faint auf sunk)."
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Bereichstitel im Inhaltsbereich; 19px auf dem Handy."
+      },
+      "stat": {
+        "displayName": "Kennzahl",
+        "purpose": "Distanz, Anstieg, Fahrzeit; Einheit 14px/500 muted."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Titel schwebender Karten, große Primäraktion."
+      },
+      "body-strong": {
+        "displayName": "Body Strong",
+        "purpose": "Titel aufklappbarer Bereiche."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Grundgröße der App."
+      },
+      "body-small": {
+        "displayName": "Body Small",
+        "purpose": "Listen, Hinweise, Legenden, Kartenchips."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Feld- und Navigationslabels, Chips; Satzschreibung."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Untertitel in Menüs und Zeilen; 11px für Achsen."
+      }
+    },
+    "shadows": [
+      {
+        "name": "shadow",
+        "value": "0 1px 3px rgb(0 0 0 / 0.5), 0 4px 10px 2px rgb(0 0 0 / 0.25)",
+        "purpose": "Alles, was über der Karte schwebt."
+      },
+      {
+        "name": "shadow-sm",
+        "value": "0 1px 3px rgb(0 0 0 / 0.45)",
+        "purpose": "Gewähltes Segment in Segmentschaltern und Tabs."
+      },
+      {
+        "name": "shadow-marker",
+        "value": "0 1px 4px rgb(0 0 0 / 0.6)",
+        "purpose": "Wegpunkt- und POI-Marker."
+      },
+      {
+        "name": "focus-search",
+        "value": "0 0 0 3px var(--accent-soft)",
+        "purpose": "Fokusring des Suchfelds."
+      },
+      {
+        "name": "focus-outline",
+        "value": "outline: 2px solid var(--accent); outline-offset: 2px",
+        "purpose": "Tastaturfokus aller übrigen Elemente."
+      }
+    ],
+    "motion": [
+      {
+        "name": "state",
+        "value": "0.12s",
+        "purpose": "Hintergrund- und Rahmenwechsel bei Hover."
+      },
+      {
+        "name": "toggle",
+        "value": "0.15s",
+        "purpose": "Chevron-Drehung, Schalter, Navigations-Pille."
+      },
+      {
+        "name": "rise",
+        "value": "translateY(6px)→0, opacity 0→1, 0.12–0.2s ease-out",
+        "purpose": "Erscheinen schwebender Karten, Menüs, Toasts, Bereichsinhalte."
+      },
+      {
+        "name": "sidebar",
+        "value": "margin 0.2s",
+        "purpose": "Seitenleiste ein- und ausfahren."
+      },
+      {
+        "name": "spin",
+        "value": "0.7s linear infinite",
+        "purpose": "Ladeindikator."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "0.01ms",
+        "purpose": "prefers-reduced-motion schaltet alle Animationen ab."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sheet",
+        "value": "760px",
+        "purpose": "Darunter wird die Seitenleiste zum unteren Blatt."
+      },
+      {
+        "name": "compact",
+        "value": "560px",
+        "purpose": "Darunter keine Chip-Labels; Streckenband nur Belag und Steigung."
+      },
+      {
+        "name": "coarse",
+        "value": "(pointer: coarse)",
+        "purpose": "Finger statt Maus: Wegpunkt-Marker 32px, Zwischenpunkte 28px."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primärknopf",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Hauptaktion eines Bereichs, z. B. GPX exportieren.",
+      "html": "<button class=\"ds-btn-primary\"><svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 4v11m-5-5 5 5 5-5M5 20h14\"/></svg> GPX exportieren</button>",
+      "css": ".ds-btn-primary { font-family: Roboto, system-ui, sans-serif; font-size: 14px; font-variant-numeric: tabular-nums; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; background: var(--accent, #8ab4f8); color: var(--on-accent, #202124); border: 1px solid var(--accent, #8ab4f8); border-radius: 999px; padding: 7px 14px; font-weight: 500; transition: background 0.12s, border-color 0.12s; } .ds-btn-primary:hover { background: var(--accent-strong, #aecbfa); border-color: var(--accent-strong, #aecbfa); } .ds-btn-primary:focus-visible { outline: 2px solid var(--accent, #8ab4f8); outline-offset: 2px; }"
+    },
+    {
+      "name": "Standardknopf",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Dunkle Pille mit Linie für alle übrigen Aktionen.",
+      "html": "<button class=\"ds-btn\">Umfahren</button>",
+      "css": ".ds-btn { font-family: Roboto, system-ui, sans-serif; font-size: 14px; font-variant-numeric: tabular-nums; cursor: pointer; background: var(--panel, #202124); color: var(--text, #e8eaed); border: 1px solid var(--line, #3c4043); border-radius: 999px; padding: 7px 14px; transition: background 0.12s; } .ds-btn:hover { background: var(--soft, #2d2e31); } .ds-btn:focus-visible { outline: 2px solid var(--accent, #8ab4f8); outline-offset: 2px; } .ds-btn:disabled { opacity: 0.45; cursor: default; }"
+    },
+    {
+      "name": "Suchfeld",
+      "kind": "input",
+      "refersTo": "input-search",
+      "description": "Pillen-Suchfeld oben im Panel, wie in Google Maps.",
+      "html": "<input class=\"ds-search\" placeholder=\"Ort suchen …\" />",
+      "css": ".ds-search { font-family: Roboto, system-ui, sans-serif; font-size: 14px; font-variant-numeric: tabular-nums; width: 280px; padding: 11px 18px; border: 1px solid transparent; border-radius: 999px; background: var(--sunk, #303134); color: var(--text, #e8eaed); outline: none; } .ds-search::placeholder { color: var(--muted, #9aa0a6); } .ds-search:focus { border-color: var(--accent, #8ab4f8); box-shadow: 0 0 0 3px var(--accent-soft, #394457); }"
+    },
+    {
+      "name": "Navigationsleiste",
+      "kind": "nav",
+      "refersTo": "rail-pill-active",
+      "description": "Material-Rail: Icon in Pille, Label darunter; aktiv in accent-soft.",
+      "html": "<nav class=\"ds-rail\"><button class=\"on\"><span class=\"pill\"><svg class=\"ds-icon\" viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"6\" cy=\"18\" r=\"2.2\"/><circle cx=\"18\" cy=\"6\" r=\"2.2\"/><path d=\"M8 17c4-1 2-6 6-7s3-2 3-2\"/></svg></span>Planen</button><button><span class=\"pill\"><svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3 2.5 8l9.5 5 9.5-5zM2.5 12.5l9.5 5 9.5-5M2.5 16.5l9.5 5 9.5-5\"/></svg></span>Entdecken</button></nav>",
+      "css": ".ds-rail { display: flex; flex-direction: column; gap: 6px; width: 80px; padding: 14px 0; align-items: center; background: var(--panel, #202124); } .ds-rail button { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 72px; padding: 4px 0 6px; border: none; background: transparent; color: var(--muted, #9aa0a6); font: 500 12px Roboto, system-ui, sans-serif; cursor: pointer; } .ds-rail .pill { display: grid; place-items: center; width: 56px; height: 32px; border-radius: 999px; transition: background 0.15s; } .ds-rail button:hover { color: var(--text, #e8eaed); } .ds-rail button:hover .pill { background: rgb(255 255 255 / 0.06); } .ds-rail button.on { color: var(--text, #e8eaed); } .ds-rail button.on .pill { background: var(--accent-soft, #394457); color: var(--accent-ink, #d2e3fc); } .ds-rail button:focus-visible { outline: 2px solid var(--accent, #8ab4f8); outline-offset: 2px; border-radius: 12px; }"
+    },
+    {
+      "name": "Kartenchip",
+      "kind": "chip",
+      "refersTo": "tool-chip",
+      "description": "Schwebende Bedienung über der Karte.",
+      "html": "<button class=\"ds-tool\"><svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3 2.5 8l9.5 5 9.5-5zM2.5 12.5l9.5 5 9.5-5M2.5 16.5l9.5 5 9.5-5\"/></svg> Ebenen <small>Untergrund</small></button> <button class=\"ds-tool on\">Radwege</button>",
+      "css": ".ds-tool { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; background: var(--panel, #202124); color: var(--text, #e8eaed); border: none; border-radius: 999px; padding: 7px 12px; font: 500 13px Roboto, system-ui, sans-serif; box-shadow: 0 1px 3px rgb(0 0 0 / 0.5), 0 4px 10px 2px rgb(0 0 0 / 0.25); white-space: nowrap; } .ds-tool small { color: var(--muted, #9aa0a6); font-weight: 400; } .ds-tool.on { background: var(--accent-soft, #394457); color: var(--accent-ink, #d2e3fc); } .ds-tool:focus-visible { outline: 2px solid var(--accent, #8ab4f8); outline-offset: 2px; }"
+    },
+    {
+      "name": "Filterchip",
+      "kind": "chip",
+      "refersTo": "chip-on",
+      "description": "Auswahlchips in Listen und Filtern.",
+      "html": "<div class=\"ds-chips\"><button class=\"on\">Café</button><button>Wasser</button><button>Werkstatt</button></div>",
+      "css": ".ds-chips { display: flex; gap: 5px; } .ds-chips button { cursor: pointer; padding: 4px 9px; font: 12px Roboto, system-ui, sans-serif; border-radius: 999px; border: 1px solid var(--line, #3c4043); background: var(--panel, #202124); color: var(--muted, #9aa0a6); transition: background 0.12s; } .ds-chips button:hover { background: var(--soft, #2d2e31); } .ds-chips button.on { border-color: var(--accent, #8ab4f8); background: var(--accent-soft, #394457); color: var(--accent-ink, #d2e3fc); font-weight: 600; } .ds-chips button:focus-visible { outline: 2px solid var(--accent, #8ab4f8); outline-offset: 2px; }"
+    },
+    {
+      "name": "Segmentschalter",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "Gewähltes Segment hebt sich mit kleinem Schatten ab.",
+      "html": "<div class=\"ds-seg\"><button class=\"on\">Route</button><button>Rundtour</button><button>Ziele</button></div>",
+      "css": ".ds-seg { display: inline-grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 3px; border-radius: 10px; background: var(--sunk, #303134); } .ds-seg button { cursor: pointer; border: none; background: transparent; padding: 7px 12px; border-radius: 8px; font: 500 14px Roboto, system-ui, sans-serif; color: var(--muted, #9aa0a6); } .ds-seg button:hover { color: var(--text, #e8eaed); } .ds-seg button.on { background: var(--panel, #202124); color: var(--text, #e8eaed); font-weight: 600; box-shadow: 0 1px 3px rgb(0 0 0 / 0.45); } .ds-seg button:focus-visible { outline: 2px solid var(--accent, #8ab4f8); outline-offset: 2px; }"
+    },
+    {
+      "name": "Panel-Gruppe",
+      "kind": "card",
+      "refersTo": "panel-group",
+      "description": "Aufklappbare Bereiche als eine Liste mit Trennlinien.",
+      "html": "<div class=\"ds-group\"><div class=\"ds-row warn\"><b>Belags-Check<small>64 m mit unsicherem Belag</small></b><span class=\"badge\">1</span><svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m9 6 6 6-6 6\"/></svg></div><div class=\"ds-row\"><b>Wind<small>Rückenwind 62 %</small></b><svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m9 6 6 6-6 6\"/></svg></div></div>",
+      "css": ".ds-group { width: 330px; display: flex; flex-direction: column; border: 1px solid var(--line, #3c4043); border-radius: 12px; background: var(--panel, #202124); overflow: hidden; font-family: Roboto, system-ui, sans-serif; color: var(--text, #e8eaed); } .ds-row { display: flex; align-items: center; gap: 8px; padding: 11px 12px 11px 14px; cursor: pointer; } .ds-row + .ds-row { border-top: 1px solid var(--line, #3c4043); } .ds-row b { flex: 1; display: flex; flex-direction: column; font-size: 14px; font-weight: 600; } .ds-row small { font-size: 12px; font-weight: 400; color: var(--muted, #9aa0a6); } .ds-row:hover b { color: var(--accent, #8ab4f8); } .ds-row svg { color: var(--muted, #9aa0a6); } .ds-row.warn { background: var(--warn-soft, #3a3320); } .ds-row .badge { min-width: 22px; padding: 1px 7px; border-radius: 999px; background: var(--soft, #2d2e31); color: var(--warn-ink, #fdd663); font-size: 12px; font-weight: 600; text-align: center; }"
+    },
+    {
+      "name": "Streckenband",
+      "kind": "custom",
+      "refersTo": "streckenband",
+      "description": "Signatur: Route gerade gezogen, Zeilen für Belag (Klassen 3–5 mit Strich-Textur, Unbekannt schraffiert), Straßenart (Wirtschaftsweg gestreift) und Steigung; Cursor als helle text-Linie.",
+      "html": "<section class=\"ds-band\"><header><span class=\"cap\">Streckenband</span><span class=\"meta\">0 – 40,9 km</span><span class=\"meta rev\">1 Revision</span></header><div class=\"row\"><span>Belag</span><div class=\"track\"><i style=\"flex:40;background:#4dabf7\"></i><i style=\"flex:3;background:#66d9e8\"></i><i style=\"flex:20;background:#4dabf7\"></i><i style=\"flex:4;background:#ffd43b\" class=\"rough\"></i><i style=\"flex:2\" class=\"hatch\"></i><i style=\"flex:25;background:#4dabf7\"></i><i style=\"flex:3;background:#ff922b\" class=\"rough\"></i><i style=\"flex:3;background:#4dabf7\"></i></div></div><div class=\"row\"><span>Straßenart</span><div class=\"track\"><i style=\"flex:10;background:#ffd43b\"></i><i style=\"flex:8;background:#63e6be\"></i><i style=\"flex:12;background:#dee2e6\"></i><i style=\"flex:6\" class=\"trk\"></i><i style=\"flex:20;background:#a5b4c4\"></i><i style=\"flex:14;background:#63e6be\"></i><i style=\"flex:30;background:#ff922b\"></i></div><b class=\"cursor\"></b></div></section>",
+      "css": ".ds-band { width: 560px; background: var(--panel, #202124); border-top: 1px solid var(--line, #3c4043); padding: 10px 16px 10px; font-family: Roboto, system-ui, sans-serif; font-variant-numeric: tabular-nums; color: var(--text, #e8eaed); } .ds-band header { display: flex; gap: 16px; align-items: center; margin-bottom: 8px; } .ds-band .cap { font-size: 12px; font-weight: 500; letter-spacing: 0.01em; } .ds-band .meta { font-size: 12px; color: var(--muted, #9aa0a6); } .ds-band .rev { margin-left: auto; color: var(--revision, #c58af9); font-weight: 600; } .ds-band .row { position: relative; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; } .ds-band .row > span { width: 80px; font-size: 12.5px; font-weight: 600; } .ds-band .track { flex: 1; display: flex; height: 16px; } .ds-band .track i { display: block; } .ds-band .rough { background-image: repeating-linear-gradient(90deg, transparent 0 3px, rgb(32 33 36 / 0.85) 3px 5px); } .ds-band .trk { background: repeating-linear-gradient(90deg, #c9a27e 0 2px, #303134 2px 5px); } .ds-band .hatch { background: repeating-linear-gradient(45deg, #80868b 0 2px, #303134 2px 4px); } .ds-band .cursor { position: absolute; left: 62%; top: -30px; bottom: -4px; width: 1px; background: var(--text, #e8eaed); } .ds-band:hover .cursor { left: 70%; transition: left 0.3s; }"
+    },
+    {
+      "name": "Wegpunkt-Menü",
+      "kind": "custom",
+      "refersTo": "wp-menu",
+      "description": "Menü beim Tippen auf einen Wegpunkt: Kopf mit Namen und Hinweis, darunter Aktionen als 8px-Zeilen; schwebend mit --shadow, 10px Radius. Teilt Gestalt und Klassen mit dem Routen-Menü (.route-menu.wp-menu).",
+      "html": "<div class=\"ds-menu\"><div class=\"menu-info\"><b>Wegpunkt 2</b><small>Zum Verschieben ziehen</small></div><button><svg class=\"ico warn\" viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 6l12 12M18 6 6 18\"/></svg> Wegpunkt entfernen</button><button class=\"menu-close\">Schließen</button></div>",
+      "css": ".ds-menu { font-family: Roboto, system-ui, sans-serif; font-variant-numeric: tabular-nums; display: inline-flex; flex-direction: column; width: 240px; background: var(--panel, #202124); color: var(--text, #e8eaed); border: 1px solid var(--line, #3c4043); border-radius: 10px; padding: 4px; box-shadow: 0 1px 3px rgb(0 0 0 / 0.5), 0 4px 10px 2px rgb(0 0 0 / 0.25); } .ds-menu .menu-info { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px 6px; font-size: 14px; } .ds-menu .menu-info small, .ds-menu button small { color: var(--muted, #9aa0a6); font-size: 11.5px; } .ds-menu button { display: flex; align-items: center; cursor: pointer; border: none; background: transparent; color: var(--text, #e8eaed); text-align: left; white-space: nowrap; padding: 7px 10px; border-radius: 8px; font: 14px Roboto, system-ui, sans-serif; transition: background 0.12s; } .ds-menu button:hover { background: var(--soft, #2d2e31); } .ds-menu button:focus-visible { outline: 2px solid var(--accent, #8ab4f8); outline-offset: 2px; } .ds-menu .ico { margin-right: 6px; color: var(--accent, #8ab4f8); } .ds-menu .ico.warn { color: var(--forbid, #f28b82); } .ds-menu hr { border: none; border-top: 1px solid var(--line, #3c4043); margin: 4px 6px; } .ds-menu .menu-close { display: none; }"
+    },
+    {
+      "name": "Routen-Menü als unteres Blatt",
+      "kind": "custom",
+      "refersTo": "route-menu",
+      "description": "Unter 760px wird das Routen- und Wegpunkt-Menü statt Popover am Fingerpunkt zum unteren Blatt: fixed 8px vom Rand, 16px Radius, max. 70vh scrollbar, Zeilen mindestens 44px, unten eine klebende Schließen-Pille.",
+      "html": "<div class=\"ds-menu ds-sheet\"><button><svg class=\"ico\" viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 5v14M5 12h14\"/></svg> Wegpunkt hier einfügen</button><button><svg class=\"ico\" viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 12h16M14 6l6 6-6 6\"/></svg> Abschnitt bearbeiten</button><hr><button><svg class=\"ico warn\" viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 6l12 12M18 6 6 18\"/></svg> Abschnitt sperren</button><button class=\"menu-close\">Schließen</button></div>",
+      "css": ".ds-menu { font-family: Roboto, system-ui, sans-serif; font-variant-numeric: tabular-nums; display: inline-flex; flex-direction: column; width: 240px; background: var(--panel, #202124); color: var(--text, #e8eaed); border: 1px solid var(--line, #3c4043); border-radius: 10px; padding: 4px; box-shadow: 0 1px 3px rgb(0 0 0 / 0.5), 0 4px 10px 2px rgb(0 0 0 / 0.25); } .ds-menu .menu-info { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px 6px; font-size: 14px; } .ds-menu .menu-info small, .ds-menu button small { color: var(--muted, #9aa0a6); font-size: 11.5px; } .ds-menu button { display: flex; align-items: center; cursor: pointer; border: none; background: transparent; color: var(--text, #e8eaed); text-align: left; white-space: nowrap; padding: 7px 10px; border-radius: 8px; font: 14px Roboto, system-ui, sans-serif; transition: background 0.12s; } .ds-menu button:hover { background: var(--soft, #2d2e31); } .ds-menu button:focus-visible { outline: 2px solid var(--accent, #8ab4f8); outline-offset: 2px; } .ds-menu .ico { margin-right: 6px; color: var(--accent, #8ab4f8); } .ds-menu .ico.warn { color: var(--forbid, #f28b82); } .ds-menu hr { border: none; border-top: 1px solid var(--line, #3c4043); margin: 4px 6px; } .ds-menu .menu-close { display: none; } .ds-sheet { width: 340px; border-radius: 16px; padding: 8px; max-height: 70vh; overflow-y: auto; } .ds-sheet button { min-height: 44px; white-space: normal; } .ds-sheet .menu-close { display: block; position: sticky; bottom: 0; background: var(--panel, #202124); margin-top: 4px; text-align: center; border: 1px solid var(--line, #3c4043); border-radius: 999px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Google Maps bei Nacht",
+    "overview": "Veloterra soll sich anfühlen wie Google Maps im Dunkelmodus: vertraut, ruhig, dunkel. Wer Google Maps kennt, findet Navigation, Suchfeld, Knöpfe und Kartenbedienung dort, wo er sie erwartet. Das System erfindet keine eigene Bildsprache; es übernimmt bewusst den Material-Kanon (Navigationsleiste mit Icon in Pille und Label, Pillen-Knöpfe, schwebende Kartenchips) und legt darüber nur das, was Google Maps nicht kann: Belag und Straßenart jedes Streckenstücks.\n\nDie Oberfläche ist dicht, aber geordnet: ein dunkles Arbeitspanel links (Navigationsleiste 80 px plus Inhaltsbereich, zusammen 448 px), die Karte als Hauptfläche, darunter das Streckenband. Farbe ist knapp und bedeutungstragend. Das eine Blau steht für Bedienung und Auswahl; Blau bis Rot erzählen den Belag: glatt ist blau wie eine Google-Route, je rauer, desto wärmer. Violett gehört allein den eigenen Änderungen. Die Karte startet mit dem amtlichen Luftbild, und die dunkle Oberfläche ist so gestimmt, dass sie neben dem Luftbild zurücktritt.\n\nAbgelehnt sind die weiße Komoot-Karte, jede helle „Plan“- oder Bauamts-Optik (ein solcher Entwurf wurde gebaut und verworfen) und themenhafte Verkleidung jeder Art.",
+    "keyCharacteristics": [
+      "Dunkle Flächen in vier eng gestaffelten Grautönen statt Schatten im Panel",
+      "Genau ein interaktives Blau (#8ab4f8), Text darauf dunkel",
+      "Belag als Klassen-Rampe 1–5 in leuchtenden Tönen, Unbekannt schraffiert",
+      "Runde Formensprache: Pillen für Aktionen, 12 px für Container",
+      "Roboto mit tabellarischen Ziffern überall",
+      "Signatur: das Streckenband unter der Karte"
+    ],
+    "rules": [
+      {
+        "name": "Die Ein-Blau-Regel",
+        "body": "Bedienung und Auswahl sprechen nur Blau (`accent` und seine Container). Keine zweite Akzentfarbe für Knöpfe, Tabs oder Fokus.",
+        "section": "colors"
+      },
+      {
+        "name": "Die Rampen-Regel",
+        "body": "Blau-Cyan-Gelb-Orange-Rot auf der Route bedeutet Belag (bzw. Straßenart in deren Modus), Warm heißt immer „ungünstiger“. Wer diese Farben dekorativ einsetzt, entwertet die Klassen.",
+        "section": "colors"
+      },
+      {
+        "name": "Die Violett-Regel",
+        "body": "`revision` markiert ausschließlich eigene Änderungen an der Route.",
+        "section": "colors"
+      },
+      {
+        "name": "Die Tabellenziffern-Regel",
+        "body": "Ziffern sind überall tabellarisch (`font-variant-numeric: tabular-nums` auf `:root`), damit km-Stände, Prozente und Höhen in Spalten stehen.",
+        "section": "typography"
+      },
+      {
+        "name": "Die Satzschreibungs-Regel",
+        "body": "Labels und Überschriften stehen in normaler Groß-/Kleinschreibung; Versal-Labels gehören nicht zu diesem System.",
+        "section": "typography"
+      },
+      {
+        "name": "Die Schwebe-Regel",
+        "body": "Was über der Karte liegt, schwebt mit Schatten; was im Panel liegt, ist flach und wird nur über Grautöne und Linien gestaffelt.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** Bedienung und Auswahl nur in `accent` und seinen Containern (`accent-soft`, `accent-tint`) ausdrücken, Text auf Blau in `on-accent`.",
+      "**Do** Belagsfarben immer über `SURFACE_CLASS` aus der Klassen-Rampe 1–5 nehmen und Unbekannt schraffieren.",
+      "**Do** neue Bedienelemente über der Karte als schwebende `panel`-Pille oder -Karte mit `--shadow` bauen, mit 12px Randabstand.",
+      "**Do** Inhalte im Panel flach halten und zusammengehörige Bereiche in einer Panel-Gruppe mit Trennlinien bündeln statt viele Karten zu stapeln.",
+      "**Do** Icons aus `Icon.tsx` nehmen (24er-Raster, Strich 1.8, runde Enden); fehlt eines, im selben Raster ergänzen.",
+      "**Do** Zahlen mit tabellarischen Ziffern und Komma als Dezimaltrenner zeigen („40,9 km“)."
+    ],
+    "donts": [
+      "**Don't** eine helle Oberfläche, eine weiße Komoot-artige Karte oder eine „Plan“-/Bauamts-Optik einführen; Veloterra ist dunkel wie Google Maps bei Nacht.",
+      "**Don't** Cyan, Gelb, Orange oder Rot dekorativ verwenden; sie gehören dem Belag, der Straßenart und den Präferenzen.",
+      "**Don't** `revision`-Violett für etwas anderes als eigene Routenänderungen nutzen.",
+      "**Don't** Emoji oder Unicode-Zeichen als Icons verwenden.",
+      "**Don't** Schatten auf Karten im Inhaltsbereich legen; Schatten gehören nur zu dem, was über der Karte schwebt.",
+      "**Don't** Versal-Labels oder Überzeilen über Überschriften setzen.",
+      "**Don't** eine zweite Schriftfamilie einführen."
+    ]
+  }
+}

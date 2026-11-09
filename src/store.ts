@@ -19,6 +19,9 @@ export interface Selection {
 
 export type Mode = 'route' | 'loop' | 'explore' | 'network';
 
+/** Bereich der Seitenleiste */
+export type Area = 'plan' | 'discover' | 'mine' | 'profile';
+
 export interface LoopOptions {
   distance: number;
   direction: Direction;
@@ -65,6 +68,9 @@ interface State {
   hideRoute: boolean;
   view: { center: LngLat; zoom: number };
   mode: Mode;
+  area: Area;
+  /** zuletzt genutzter Entdecken-Modus */
+  discoverMode: Exclude<Mode, 'route'>;
   loopStart: LngLat | null;
   loopOptions: LoopOptions;
   exploreOptions: ExploreOptions;
@@ -140,6 +146,8 @@ interface State {
   setHoverDistance: (d: number | null) => void;
   setEditingLeg: (k: string | null) => void;
   setMode: (m: Mode) => void;
+  /** Bereich wechseln; Planen/Entdecken schalten auch den Kartenmodus */
+  setArea: (a: Area) => void;
   setLoopStart: (p: LngLat | null) => void;
   setLoopOptions: (o: Partial<LoopOptions>) => void;
   setSuggestions: (s: Suggestion[]) => void;
@@ -195,10 +203,13 @@ export const useStore = create<State>()(
       overrides: {},
       blocks: [],
       colorMode: 'surface',
-      basemap: 'light',
+      // Start immer mit amtlichem Luftbild (wird bewusst nicht gespeichert)
+      basemap: 'aerial',
       hideRoute: false,
       view: { center: [8.68, 50.11], zoom: 11 },
       mode: 'route',
+      area: 'plan',
+      discoverMode: 'loop',
       loopStart: null,
       loopOptions: { distance: 60000, direction: 'any', ranking: 'quality' },
       exploreOptions: {
@@ -310,9 +321,27 @@ export const useStore = create<State>()(
       setSelection: (selection) => set({ selection }),
       setHoverDistance: (hoverDistance) => set({ hoverDistance }),
       setEditingLeg: (editingLeg) => set({ editingLeg }),
+      setArea: (area) =>
+        set((s) => {
+          if (area === 'plan') return { area, mode: 'route', selection: null, editingLeg: null, activePoi: null };
+          if (area === 'discover') {
+            const mode = s.discoverMode;
+            return {
+              area,
+              mode,
+              selection: null,
+              editingLeg: null,
+              activePoi: null,
+              loopStart: !s.loopStart && s.waypoints[0] ? [s.waypoints[0].lng, s.waypoints[0].lat] : s.loopStart,
+            };
+          }
+          return { area };
+        }),
       setMode: (mode) =>
         set((s) => ({
           mode,
+          area: mode === 'route' ? 'plan' : 'discover',
+          discoverMode: mode === 'route' ? s.discoverMode : mode,
           selection: null,
           editingLeg: null,
           activePoi: null,
@@ -330,6 +359,7 @@ export const useStore = create<State>()(
           selection: null,
           editingLeg: null,
           mode: 'route',
+          area: 'plan',
           suggestions: [],
           activeSuggestion: null,
           activePoi: null,
@@ -393,6 +423,7 @@ export const useStore = create<State>()(
           routeName: r.name,
           savedId: r.id,
           mode: 'route',
+          area: 'plan',
           selection: null,
           editingLeg: null,
           importTrack: null,
@@ -410,6 +441,12 @@ export const useStore = create<State>()(
     {
       name: 'bike-planner',
       version: 1,
+      // Kartenstil wird nicht übernommen: Start immer mit Luftbild DE
+      merge: (persisted, current) => ({
+        ...current,
+        ...(persisted as Partial<State>),
+        basemap: current.basemap,
+      }),
       partialize: (s) => ({
         waypoints: s.waypoints,
         settings: s.settings,
@@ -417,9 +454,10 @@ export const useStore = create<State>()(
         overrides: s.overrides,
         blocks: s.blocks,
         colorMode: s.colorMode,
-        basemap: s.basemap,
         view: s.view,
         mode: s.mode,
+        area: s.area,
+        discoverMode: s.discoverMode,
         loopStart: s.loopStart,
         loopOptions: s.loopOptions,
         exploreOptions: s.exploreOptions,

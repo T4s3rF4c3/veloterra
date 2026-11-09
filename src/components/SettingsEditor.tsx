@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Icon, type IconName } from './Icon';
 import {
   BIKE_TYPES,
   PRESETS,
@@ -13,7 +14,7 @@ import {
   type TrailLevel,
 } from '../domain/settings';
 
-const PREF_ICON: Record<Pref, string> = { prefer: '★', neutral: '○', avoid: '↓', forbid: '✕' };
+const PREF_ICON: Record<Pref, IconName> = { prefer: 'star', neutral: 'circle', avoid: 'arrow-down', forbid: 'x' };
 
 function PrefControl({ value, onChange }: { value: Pref; onChange: (p: Pref) => void }) {
   return (
@@ -27,7 +28,7 @@ function PrefControl({ value, onChange }: { value: Pref; onChange: (p: Pref) => 
           className={`seg-btn pref-${p} ${value === p ? 'on' : ''}`}
           onClick={() => onChange(p)}
         >
-          {PREF_ICON[p]}
+          <Icon name={PREF_ICON[p]} size={14} />
         </button>
       ))}
     </div>
@@ -85,7 +86,7 @@ function Section({ title, children, open = false }: { title: string; children: R
     <section className={`acc ${isOpen ? 'open' : ''}`}>
       <button className="acc-head" onClick={() => setOpen(!isOpen)}>
         <span>{title}</span>
-        <span className="chev">›</span>
+        <Icon name="chevron-right" className="chev" />
       </button>
       {isOpen && <div className="acc-body">{children}</div>}
     </section>
@@ -126,7 +127,7 @@ export function SettingsEditor({ settings, presetId, onChange, compact }: Props)
               onChange(cloneSettings(p.settings), p.id);
             }}
           >
-            <span aria-hidden>{b.icon}</span> {b.label}
+            {b.label}
           </button>
         ))}
       </div>
@@ -146,7 +147,10 @@ export function SettingsEditor({ settings, presetId, onChange, compact }: Props)
       <div className="legend-prefs">
         {PREFS.map((p) => (
           <span key={p}>
-            <b className={`pref-${p}`}>{PREF_ICON[p]}</b> {PREF_LABEL[p]}
+            <b className={`pref-${p}`}>
+              <Icon name={PREF_ICON[p]} size={12} />
+            </b>{' '}
+            {PREF_LABEL[p]}
           </span>
         ))}
       </div>

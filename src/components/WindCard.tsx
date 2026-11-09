@@ -1,6 +1,7 @@
 import { compassLabel, windAt, type WindForecast, type WindSummary } from '../domain/wind';
 import { departureTime } from '../hooks/useWind';
 import { useStore } from '../store';
+import { Icon } from './Icon';
 
 /** datetime-local erwartet lokale Zeit ohne Zeitzone */
 function toLocalInput(t: number) {
@@ -12,8 +13,8 @@ function toLocalInput(t: number) {
 /** Pfeil zeigt, wohin der Wind weht (also von „from“ weg). */
 export function WindArrow({ from, size = 18 }: { from: number; size?: number }) {
   return (
-    <span className="wind-arrow" style={{ transform: `rotate(${from + 180}deg)`, fontSize: size }} aria-hidden>
-      ↑
+    <span className="wind-arrow" style={{ transform: `rotate(${from + 180}deg)` }} aria-hidden>
+      <Icon name="arrow-up" size={size} />
     </span>
   );
 }

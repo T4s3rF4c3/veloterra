@@ -235,7 +235,7 @@ export function LoopPanel({
       )}
       {rated.length > 0 && !progress && (
         <p className="muted small">
-          Nach dem Übernehmen kannst du die Runde wie gewohnt bearbeiten – Abschnitte umgehen, anders planen, Wegpunkte
+          Nach dem Übernehmen kannst du die Runde wie gewohnt bearbeiten – Abschnitte umfahren, anders planen, Wegpunkte
           verschieben.
         </p>
       )}

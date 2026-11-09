@@ -6,6 +6,7 @@ import { STOP_CATEGORIES } from '../domain/poi';
 import type { CombinedRoute } from '../domain/route';
 import { sliceLine } from '../domain/geo';
 import { useStore } from '../store';
+import { Icon } from './Icon';
 
 const LEVEL_CLASS: Record<Climb['level'], string> = {
   leicht: 'good',
@@ -38,7 +39,7 @@ export function ClimbList({
   return (
     <Panel
       id="climbs"
-      icon="⛰️"
+      icon="mountain"
       title="Anstiege"
       badge={climbs.length}
       summary={(() => {
@@ -101,14 +102,14 @@ export function StopsList({
   return (
     <Panel
       id="stops"
-      icon="☕"
+      icon="coffee"
       title="Stopps unterwegs"
       defaultOpen
       badge={loading ? <span className="spinner" title="Wird geladen" /> : stops.length}
       summary="Cafés, Wasser, Rad-Service an der Route"
       actions={
         <button className="mini ghost" onClick={() => st().setShowStops(false)} title="Stopps ausblenden">
-          ✕
+          <Icon name="x" size={14} />
         </button>
       }
     >
@@ -121,7 +122,7 @@ export function StopsList({
               st().setStopCategories(cats.includes(c.key) ? cats.filter((x) => x !== c.key) : [...cats, c.key])
             }
           >
-            {c.icon} {c.label}
+            <Icon name={c.icon} size={14} /> {c.label}
           </button>
         ))}
       </div>
@@ -153,7 +154,7 @@ export function StopsList({
               <span className="km">km {((p.along ?? 0) / 1000).toFixed(0)}</span>
               <span>
                 <b>
-                  {p.icon} {p.name}
+                  <Icon name={p.icon} size={14} /> {p.name}
                 </b>
                 <small>{p.offset < 40 ? 'direkt an der Route' : `${Math.round(p.offset)} m abseits`}</small>
               </span>

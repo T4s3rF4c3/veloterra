@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ElevationChart } from './components/ElevationChart';
+import { Streckenband } from './components/Streckenband';
 import { LegEditor } from './components/LegEditor';
 import { DensityLegend } from './components/GpsTraces';
 import { MapToolbar } from './components/MapToolbar';
@@ -17,6 +17,8 @@ import { useStops } from './hooks/useStops';
 import { departureTime, useWind } from './hooks/useWind';
 import { redo, undo, useHistory } from './history';
 import { useStore } from './store';
+import { Icon } from './components/Icon';
+import { SURFACE_CLASS, type SurfaceCat } from './domain/settings';
 
 export default function App() {
   const { route, stale, legs, loading, errors, retry } = useRouting();
@@ -31,6 +33,7 @@ export default function App() {
   const loopStart = useStore((s) => s.loopStart);
   const [panelOpen, setPanelOpen] = useState(true);
   const notice = useHistory((s) => s.notice);
+  const hasAvoids = useStore((s) => Object.values(s.overrides).some((o) => o.avoid?.length));
 
   // Wind am Start der Route bzw. am Rundtour-Startpunkt
   const windPoint: LngLat | null =
@@ -38,6 +41,17 @@ export default function App() {
   const wind = useWind(windPoint);
   const heat = useHeat((s) => s.index);
   const coloring = useColoring(route, colorMode, wind.forecast, departure, heat);
+  // Beim Belag eine Zeile je Klasse („1 Asphalt, Beton“) statt doppelter Farben
+  const legendItems =
+    colorMode === 'surface'
+      ? Object.values(
+          coloring.legend.reduce<Record<string, (typeof coloring.legend)[number]>>((acc, c) => {
+            const k = String(SURFACE_CLASS[c.key as SurfaceCat]);
+            acc[k] = acc[k] ? { ...acc[k], label: `${acc[k].label}, ${c.label}` } : { ...c };
+            return acc;
+          }, {}),
+        )
+      : coloring.legend;
   const stops = useStops(route);
   const checkedSurfaces = useStore((s) => s.checkedSurfaces);
   const sections = useMemo(() => (route ? uncertainSections(route) : []), [route]);
@@ -101,49 +115,85 @@ export default function App() {
         }}
       />
       <main className="main">
-        <MapView
-          route={route}
-          stale={stale}
-          pieces={coloring.pieces}
-          uncertain={mode === 'route' ? uncertainLines : []}
-          onMapApi={(api) => (mapApi.current = api)}
-        />
-        <button className="panel-toggle" onClick={() => setPanelOpen(!panelOpen)} aria-label="Seitenleiste umschalten">
-          {panelOpen ? '‹' : '›'}
-        </button>
-        <MapToolbar hasRoute={!!route} bounds={() => mapApi.current?.bounds() ?? null} />
-        {mode === 'route' && route && coloring.legend.length > 0 && (
-          <div className="map-legend">
-            {coloring.legend.map((c) => (
-              <span key={c.key}>
-                <i style={{ background: c.color }} />
-                {c.label}
+        <div className="map-area">
+          <MapView
+            route={route}
+            stale={stale}
+            pieces={coloring.pieces}
+            uncertain={mode === 'route' ? uncertainLines : []}
+            onMapApi={(api) => (mapApi.current = api)}
+          />
+          <button
+            className="panel-toggle"
+            onClick={() => setPanelOpen(!panelOpen)}
+            aria-label="Seitenleiste umschalten"
+          >
+            <Icon name={panelOpen ? 'chevron-left' : 'chevron-right'} size={18} />
+          </button>
+          <MapToolbar hasRoute={!!route} bounds={() => mapApi.current?.bounds() ?? null} />
+          {mode === 'route' && route && coloring.legend.length > 0 && (
+            <div className="map-legend">
+              {legendItems.map((c) => (
+                <span key={c.key}>
+                  <i
+                    className={
+                      c.key === 'unknown'
+                        ? 'hatch'
+                        : colorMode === 'surface' && SURFACE_CLASS[c.key as SurfaceCat] >= 3
+                          ? 'rough'
+                          : undefined
+                    }
+                    style={c.key === 'unknown' ? undefined : { backgroundColor: c.color }}
+                  />
+                  {colorMode === 'surface' && (
+                    <b className="legend-class">{SURFACE_CLASS[c.key as SurfaceCat] || '?'}</b>
+                  )}
+                  {c.label}
+                </span>
+              ))}
+              <span className="legend-lines">
+                <svg width="22" height="6" aria-hidden>
+                  <path d="M0 3h22" />
+                </svg>
+                berechnet
               </span>
-            ))}
+              <span className="legend-lines">
+                <svg width="22" height="6" aria-hidden>
+                  <path d="M0 3h22" strokeDasharray="5 3" />
+                </svg>
+                rechnet
+              </span>
+              {hasAvoids && (
+                <span className="legend-lines redline">
+                  <svg width="22" height="6" aria-hidden>
+                    <path d="M0 3h22" strokeDasharray="4 3" />
+                  </svg>
+                  umfahren
+                </span>
+              )}
+            </div>
+          )}
+          {mode === 'route' && route && colorMode === 'wind' && !wind.forecast && (
+            <div className="map-legend">Windvorhersage wird geladen …</div>
+          )}
+          <div className="bottom">
+            <DensityLegend />
+            {mode === 'route' && route && selection?.end != null && <SelectionBar route={route} />}
+            {mode === 'route' && route && showPhotos && <PhotoStrip route={route} />}
           </div>
-        )}
-        {mode === 'route' && route && colorMode === 'wind' && !wind.forecast && (
-          <div className="map-legend">Windvorhersage wird geladen …</div>
-        )}
-        <div className="bottom">
-          <DensityLegend />
-          {mode === 'route' && route && selection?.end != null && <SelectionBar route={route} />}
-          {mode === 'route' && route && showPhotos && <PhotoStrip route={route} />}
-          {mode === 'route' && route && (
-            <ElevationChart route={route} pieces={coloring.pieces} climbs={coloring.climbs} />
+          {editingLeg && <LegEditor />}
+          <PoiCard route={route} fit={(c) => mapApi.current?.fit(c)} />
+          {notice && (
+            <div className="undo-toast" role="status">
+              <span>{notice}</span>
+              <button onClick={undo}>Rückgängig</button>
+              <button className="ghost" onClick={() => useHistory.getState().dismissNotice()} aria-label="Schließen">
+                <Icon name="x" size={14} />
+              </button>
+            </div>
           )}
         </div>
-        {editingLeg && <LegEditor />}
-        <PoiCard route={route} fit={(c) => mapApi.current?.fit(c)} />
-        {notice && (
-          <div className="undo-toast" role="status">
-            <span>{notice}</span>
-            <button onClick={undo}>Rückgängig</button>
-            <button className="ghost" onClick={() => useHistory.getState().dismissNotice()} aria-label="Schließen">
-              ✕
-            </button>
-          </div>
-        )}
+        {mode === 'route' && route && <Streckenband route={route} climbs={coloring.climbs} legs={legs} stale={stale} />}
       </main>
     </div>
   );

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { usePhotos } from '../hooks/usePhotos';
 import type { CombinedRoute } from '../domain/route';
 import { useStore } from '../store';
+import { Icon } from './Icon';
 
 /** Fotos entlang der Route als Streifen über dem Höhenprofil, mit Großansicht. */
 export function PhotoStrip({ route }: { route: CombinedRoute }) {
@@ -44,10 +45,10 @@ export function PhotoStrip({ route }: { route: CombinedRoute }) {
         {error && <small className="warn-text">{error}</small>}
         <span className="spacer" />
         <button className="mini ghost" onClick={() => setShowToken(!showToken)} title="Mapillary verbinden">
-          {token ? 'Mapillary ✓' : '+ Mapillary'}
+          <Icon name={token ? 'check' : 'plus'} size={13} /> Mapillary
         </button>
         <button className="mini ghost" onClick={() => st().setShowPhotos(false)} aria-label="Fotos schließen">
-          ✕
+          <Icon name="x" size={14} />
         </button>
       </div>
       {showToken && (
@@ -114,7 +115,7 @@ export function PhotoStrip({ route }: { route: CombinedRoute }) {
               onClick={() => st().setActivePhoto(photos[idx - 1].id)}
               aria-label="Vorheriges Foto"
             >
-              ‹
+              <Icon name="chevron-left" size={24} />
             </button>
             <button
               className="lb-nav next"
@@ -122,10 +123,10 @@ export function PhotoStrip({ route }: { route: CombinedRoute }) {
               onClick={() => st().setActivePhoto(photos[idx + 1].id)}
               aria-label="Nächstes Foto"
             >
-              ›
+              <Icon name="chevron-right" size={24} />
             </button>
             <button className="lb-close" onClick={() => st().setActivePhoto(null)} aria-label="Schließen">
-              ✕
+              <Icon name="x" size={20} />
             </button>
           </figure>
         </div>

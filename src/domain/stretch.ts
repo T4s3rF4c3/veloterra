@@ -75,8 +75,8 @@ export function gradeAt(route: CombinedRoute, d: number): number {
 
 export const surfaceLabel = (k: SurfaceCat) => SURFACES.find((x) => x.key === k)?.label ?? k;
 export const roadLabel = (k: RoadCat) => ROADS.find((x) => x.key === k)?.label ?? k;
-export const surfaceColor = (k: SurfaceCat) => SURFACES.find((x) => x.key === k)?.color ?? '#94a3b8';
-export const roadColor = (k: RoadCat) => ROADS.find((x) => x.key === k)?.color ?? '#94a3b8';
+export const surfaceColor = (k: SurfaceCat) => SURFACES.find((x) => x.key === k)?.color ?? '#adb5bd';
+export const roadColor = (k: RoadCat) => ROADS.find((x) => x.key === k)?.color ?? '#adb5bd';
 
 const SMOOTHNESS: Record<string, string> = {
   excellent: 'sehr glatt',
