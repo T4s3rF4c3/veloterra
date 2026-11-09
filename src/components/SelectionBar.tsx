@@ -3,6 +3,7 @@ import { legKey, nogosAlongLine, type CombinedRoute } from '../domain/route';
 import { ROADS, SURFACES, cloneSettings } from '../domain/settings';
 import { avoidRange, legIndexAt } from '../actions';
 import { useStore } from '../store';
+import { Icon } from './Icon';
 
 const SNAP_M = 60;
 
@@ -105,19 +106,19 @@ export function SelectionBar({ route }: { route: CombinedRoute }) {
       </div>
       <div className="selbar-actions">
         <button className="primary" onClick={avoid} title="Diesen Abschnitt in der aktuellen Etappe umfahren">
-          ⤳ Umgehen
+          <Icon name="detour" /> Umfahren
         </button>
         <button onClick={replan} title="Nur diesen Abschnitt mit eigenen Einstellungen planen">
-          ⚙ Anders planen
+          <Icon name="sliders" /> Anders planen
         </button>
         <button onClick={alternative} title="Alternative Route für diese Etappe">
-          ⇄ Alternative
+          <Icon name="alternative" /> Alternative
         </button>
         <button onClick={block} title="Für alle künftigen Routen sperren">
-          ⛔ Immer meiden
+          <Icon name="ban" /> Immer meiden
         </button>
         <button className="ghost" onClick={() => st().setSelection(null)} aria-label="Abbrechen">
-          ✕
+          <Icon name="x" />
         </button>
       </div>
     </div>

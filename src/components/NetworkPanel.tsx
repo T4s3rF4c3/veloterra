@@ -14,6 +14,7 @@ import {
 import { formatKm, type LngLat } from '../domain/geo';
 import { importTrack } from '../hooks/useImport';
 import { useStore } from '../store';
+import { Icon } from './Icon';
 
 const GROUPS: NetworkGroup[] = ['INT', 'NAT', 'REG', 'LOC'];
 const GROUP_ORDER: Record<NetworkGroup, number> = { INT: 0, NAT: 1, REG: 2, LOC: 3 };
@@ -130,10 +131,10 @@ export function NetworkPanel({
     <section className="card loop">
       <div className="choice wide-choice">
         <button className={kind === 'cycling' ? 'on' : ''} onClick={() => setKind('cycling')}>
-          🚲 Radrouten
+          <Icon name="signpost" /> Radrouten
         </button>
         <button className={kind === 'mtb' ? 'on' : ''} onClick={() => setKind('mtb')}>
-          🚵 MTB-Routen
+          <Icon name="mountain" /> MTB-Routen
         </button>
       </div>
       <p className="muted small">
@@ -165,7 +166,11 @@ export function NetworkPanel({
             return (
               <li key={`${r.kind}-${r.id}`} className={on ? 'on' : ''} onClick={() => select(r)}>
                 <span className="net-symbol">
-                  {r.symbolId ? <img src={symbolUrl(r.kind, r.symbolId)} alt="" loading="lazy" /> : '🚲'}
+                  {r.symbolId ? (
+                    <img src={symbolUrl(r.kind, r.symbolId)} alt="" loading="lazy" />
+                  ) : (
+                    <Icon name="signpost" size={22} />
+                  )}
                 </span>
                 <div className="sugg-main">
                   <div className="sugg-head">

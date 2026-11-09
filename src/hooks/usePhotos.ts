@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { photosAlong } from '../api/photos';
 import type { CombinedRoute } from '../domain/route';
 import { useStore } from '../store';
+import { useSite } from '../api/site';
 
 /** Fotos entlang der Route (Panoramax, optional Mapillary). */
 export function usePhotos(route: CombinedRoute | null) {
   const show = useStore((s) => s.showPhotos);
-  const token = useStore((s) => s.mapillaryToken);
+  const siteToken = useSite((s) => s.config.mapillaryToken);
+  const token = useStore((s) => s.mapillaryToken) || siteToken;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sig = route ? `${route.coords.length}|${route.length}|${route.coords[0]}` : '';

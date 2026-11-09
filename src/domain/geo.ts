@@ -157,6 +157,11 @@ export function formatKm(m: number): string {
   return `${(m / 1000).toFixed(m < 10000 ? 1 : 0).replace('.', ',')} km`;
 }
 
+/** Kilometerstand mit einer Nachkommastelle („18,4“), wie auf dem km-Lineal. */
+export function formatKmExact(m: number): string {
+  return (m / 1000).toFixed(1).replace('.', ',');
+}
+
 export function formatDuration(s: number): string {
   const h = Math.floor(s / 3600);
   const m = Math.round((s % 3600) / 60);

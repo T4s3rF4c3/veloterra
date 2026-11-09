@@ -2,6 +2,7 @@ import { bearing, destination, formatKm, haversine } from '../domain/geo';
 import { poiDetails } from '../domain/poi';
 import type { CombinedRoute } from '../domain/route';
 import { uid, useStore } from '../store';
+import { Icon } from './Icon';
 
 /** Details und Aktionen zum gewählten Stopp bzw. Ziel. */
 export function PoiCard({ route, fit }: { route: CombinedRoute | null; fit: (c: [number, number][]) => void }) {
@@ -49,7 +50,9 @@ export function PoiCard({ route, fit }: { route: CombinedRoute | null; fit: (c: 
   return (
     <div className="poi-card">
       <div className="poi-card-head">
-        <span className="poi-icon">{p.icon}</span>
+        <span className="poi-icon">
+          <Icon name={p.icon} size={22} />
+        </span>
         <div>
           <h2>{p.name}</h2>
           <p className="muted small">
@@ -59,7 +62,7 @@ export function PoiCard({ route, fit }: { route: CombinedRoute | null; fit: (c: 
           </p>
         </div>
         <button className="ghost" onClick={() => st().setActivePoi(null)} aria-label="Schließen">
-          ✕
+          <Icon name="x" />
         </button>
       </div>
       {details.length > 0 && (
@@ -72,16 +75,16 @@ export function PoiCard({ route, fit }: { route: CombinedRoute | null; fit: (c: 
       <div className="poi-actions">
         {mode === 'route' && route && (
           <button className="primary" onClick={insert}>
-            ＋ Als Wegpunkt einfügen
+            <Icon name="plus" /> Als Wegpunkt einfügen
           </button>
         )}
         {mode === 'explore' && (
           <>
             <button className="primary" onClick={() => routeTo(true)} disabled={!start}>
-              ↺ Runde über dieses Ziel
+              <Icon name="rotate-ccw" /> Runde über dieses Ziel
             </button>
             <button onClick={() => routeTo(false)} disabled={!start}>
-              → Route hierher
+              <Icon name="arrow-right" /> Route hierher
             </button>
           </>
         )}

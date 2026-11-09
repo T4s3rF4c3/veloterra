@@ -7,10 +7,12 @@ import {
   ScaleControl,
   type GeoJSONSource,
   type MapMouseEvent,
+  type RasterTileSource,
   type StyleSpecification,
 } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
 import {
   bearing,
   cumulativeDistances,
@@ -23,14 +25,15 @@ import {
 } from '../domain/geo';
 import { nogosAlongLine, type CombinedRoute } from '../domain/route';
 import { avoidRange, dragRoute, insertWaypointOnRoute, moveWaypointLocally } from '../actions';
-import { cloneSettings } from '../domain/settings';
+import { cloneSettings, SURFACE_CLASS, type SurfaceCat } from '../domain/settings';
 import { gradeAt, roadColor, roadLabel, stretchAt, surfaceColor, surfaceLabel, wayDetails } from '../domain/stretch';
 import type { Piece } from '../hooks/useColoring';
 import { useHeat } from '../api/heatStore';
-import { cellOutlines, traceFeatures, useTraces } from '../api/osmTraces';
+import { cellOutlines, syncFromServer, traceFeatures, useTraces } from '../api/osmTraces';
 import { listByArea, tileUrl } from '../api/waymarked';
 import { useStore, type Basemap, type Suggestion } from '../store';
 import { SUGGESTION_COLORS } from '../domain/roundtrip';
+import { Icon } from './Icon';
 
 const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services';
 
@@ -134,12 +137,18 @@ const EMPTY: FC = { type: 'FeatureCollection', features: [] };
 
 /** Klick näher als so viele Pixel an der Route zählt als Klick auf die Route. */
 const HIT_PX = 14;
+/** Auf Touchgeräten ist der Finger ungenauer. */
+const TOUCH_HIT_PX = 24;
+/** So lange auf die Route drücken, bis sie sich ziehen lässt (Touch). */
+const LONG_PRESS_MS = 350;
 
 interface RouteMenu {
   x: number;
   y: number;
   distance: number;
   point: LngLat;
+  /** „Mehr …“ aufgeklappt */
+  more?: boolean;
 }
 
 export interface MapApi {
@@ -175,9 +184,27 @@ function routeFeatures(route: CombinedRoute | null, pieces: Piece[]): FC {
     type: 'FeatureCollection',
     features: pieces.map((s) => ({
       type: 'Feature',
-      properties: { color: s.color },
+      properties: { color: s.color, rough: (SURFACE_CLASS[s.key as SurfaceCat] ?? 0) >= 3 ? 1 : 0 },
       geometry: { type: 'LineString', coordinates: route.coords.slice(s.from, s.to + 1) },
     })),
+  };
+}
+
+/**
+ * Routenmenü am Klickpunkt: am rechten Rand nach links, unten nach oben aufklappen –
+ * in die Richtung mit mehr Platz – und nie höher als dieser Platz (Rest scrollt).
+ */
+function menuPlacement(menu: RouteMenu, el: HTMLElement | null): CSSProperties {
+  const w = el?.clientWidth ?? 0;
+  const h = el?.clientHeight ?? 0;
+  const need = menu.more ? 470 : 230;
+  const up = menu.y > h - need && menu.y > h - menu.y;
+  return {
+    left: menu.x,
+    top: menu.y,
+    transform: `translate(${menu.x > w - 280 ? 'calc(-100% - 8px)' : '8px'}, ${up ? 'calc(-100% - 8px)' : '8px'})`,
+    maxHeight: (up ? menu.y : h - menu.y) - 16,
+    overflowY: 'auto',
   };
 }
 
@@ -222,7 +249,7 @@ function addLayers(map: MlMap) {
     type: 'line',
     source: 'traces-box',
     layout: { visibility: 'none' },
-    paint: { 'line-color': '#0f172a', 'line-width': 1, 'line-dasharray': [2, 3], 'line-opacity': 0.35 },
+    paint: { 'line-color': '#e8eaed', 'line-width': 1, 'line-dasharray': [2, 3], 'line-opacity': 0.4 },
   });
   map.addLayer({
     id: 'traces-heat',
@@ -242,15 +269,15 @@ function addLayers(map: MlMap) {
         0,
         'rgba(0,0,0,0)',
         0.08,
-        'rgba(37,99,235,0.55)',
+        'rgba(77,171,247,0.55)',
         0.3,
-        '#22c55e',
+        '#63e6be',
         0.55,
-        '#facc15',
+        '#ffd43b',
         0.8,
-        '#f97316',
+        '#ff922b',
         1,
-        '#dc2626',
+        '#ff6b6b',
       ],
     },
   });
@@ -262,7 +289,7 @@ function addLayers(map: MlMap) {
     source: 'myheat',
     layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' },
     paint: {
-      'line-color': '#fc4c02',
+      'line-color': '#fcad70',
       'line-width': ['interpolate', ['linear'], ['zoom'], 8, 1, 14, 2.5, 17, 4],
       'line-opacity': ['interpolate', ['linear'], ['zoom'], 8, 0.25, 14, 0.4],
     },
@@ -315,7 +342,7 @@ function addLayers(map: MlMap) {
     id: 'netroute',
     type: 'line',
     source: 'netroute',
-    paint: { 'line-color': '#c026d3', 'line-width': 5 },
+    paint: { 'line-color': '#e58cf0', 'line-width': 5 },
     layout: { 'line-cap': 'round', 'line-join': 'round' },
   });
 
@@ -323,34 +350,35 @@ function addLayers(map: MlMap) {
     id: 'import',
     type: 'line',
     source: 'import',
-    paint: { 'line-color': '#a21caf', 'line-width': 2.5, 'line-dasharray': [2, 1.5], 'line-opacity': 0.85 },
+    paint: { 'line-color': '#e58cf0', 'line-width': 2.5, 'line-dasharray': [2, 1.5], 'line-opacity': 0.85 },
   });
 
   map.addLayer({
     id: 'blocks',
     type: 'line',
     source: 'blocks',
-    paint: { 'line-color': '#dc2626', 'line-width': 5, 'line-dasharray': [1, 1], 'line-opacity': 0.8 },
+    paint: { 'line-color': '#f28b82', 'line-width': 5, 'line-dasharray': [1, 1], 'line-opacity': 0.85 },
     layout: { 'line-cap': 'round' },
   });
   map.addLayer({
     id: 'avoids',
     type: 'line',
     source: 'avoids',
-    paint: { 'line-color': '#f97316', 'line-width': 4, 'line-dasharray': [1, 1.5], 'line-opacity': 0.8 },
+    // umfahrene Stücke als Rotstift-Revision
+    paint: { 'line-color': '#c58af9', 'line-width': 3, 'line-dasharray': [1.5, 1.5], 'line-opacity': 0.95 },
   });
   map.addLayer({
     id: 'selection',
     type: 'line',
     source: 'selection',
-    paint: { 'line-color': '#0f172a', 'line-width': 18, 'line-opacity': 0.4 },
+    paint: { 'line-color': '#8ab4f8', 'line-width': 18, 'line-opacity': 0.35 },
     layout: { 'line-cap': 'round', 'line-join': 'round' },
   });
   map.addLayer({
     id: 'route-casing',
     type: 'line',
     source: 'route',
-    paint: { 'line-color': '#ffffff', 'line-width': 8 },
+    paint: { 'line-color': '#202124', 'line-width': 8 },
     layout: { 'line-cap': 'round', 'line-join': 'round' },
   });
   map.addLayer({
@@ -359,6 +387,14 @@ function addLayers(map: MlMap) {
     source: 'route',
     paint: { 'line-color': ['get', 'color'], 'line-width': 5 },
     layout: { 'line-cap': 'round', 'line-join': 'round' },
+  });
+  // Schotter, Kopfstein, unbefestigt: Strich-Textur auf der Linie, erkennbar auch ohne Farbe
+  map.addLayer({
+    id: 'route-rough',
+    type: 'line',
+    source: 'route',
+    filter: ['==', ['get', 'rough'], 1],
+    paint: { 'line-color': '#202124', 'line-width': 2, 'line-dasharray': [1, 1.6] },
   });
   map.addLayer({
     id: 'uncertain',
@@ -399,14 +435,14 @@ function addLayers(map: MlMap) {
     id: 'sel-ends',
     type: 'circle',
     source: 'sel-ends',
-    paint: { 'circle-radius': 6, 'circle-color': '#0f172a', 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 },
+    paint: { 'circle-radius': 6, 'circle-color': '#202124', 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 },
   });
   // Vorschau beim Ziehen der Route
   map.addLayer({
     id: 'drag',
     type: 'line',
     source: 'drag',
-    paint: { 'line-color': '#0f172a', 'line-width': 3, 'line-dasharray': [1.5, 1.5], 'line-opacity': 0.75 },
+    paint: { 'line-color': '#ffffff', 'line-width': 3, 'line-dasharray': [1.5, 1.5], 'line-opacity': 0.85 },
     layout: { 'line-cap': 'round', 'line-join': 'round' },
   });
   map.addLayer({
@@ -414,13 +450,13 @@ function addLayers(map: MlMap) {
     type: 'circle',
     source: 'drag',
     filter: ['==', ['geometry-type'], 'Point'],
-    paint: { 'circle-radius': 7, 'circle-color': '#fff', 'circle-stroke-color': '#0f172a', 'circle-stroke-width': 3 },
+    paint: { 'circle-radius': 7, 'circle-color': '#fff', 'circle-stroke-color': '#202124', 'circle-stroke-width': 3 },
   });
   map.addLayer({
     id: 'hover',
     type: 'circle',
     source: 'hover',
-    paint: { 'circle-radius': 6, 'circle-color': '#fff', 'circle-stroke-color': '#0f172a', 'circle-stroke-width': 2.5 },
+    paint: { 'circle-radius': 6, 'circle-color': '#fff', 'circle-stroke-color': '#202124', 'circle-stroke-width': 2.5 },
   });
 }
 
@@ -483,13 +519,27 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
   /** Info-Kästchen beim Überfahren der Route */
   const [tip, setTip] = useState<{ x: number; y: number; distance: number } | null>(null);
   /** Route wird gerade mit der Maus gezogen */
-  const drag = useRef<{ x: number; y: number; leg: number; d0: number; active: boolean } | null>(null);
+  const drag = useRef<{
+    x: number;
+    y: number;
+    leg: number;
+    d0: number;
+    active: boolean;
+    last?: LngLat;
+  } | null>(null);
+  /** Menü eines angetippten Wegpunkts */
+  const [wpMenu, setWpMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  /** Touchgerät: Hinweise sagen „Tippe“ statt „Klicke“ */
+  const [touch] = useState(() => window.matchMedia('(pointer: coarse)').matches);
   const menuOpen = useRef(false);
   menuOpen.current = !!menu;
   const markers = useRef(new Map<string, Marker>());
   const markerOwner = useRef<MlMap | null>(null);
 
   const waypoints = useStore((s) => s.waypoints);
+  const showRadar = useStore((s) => s.showRadar);
+  /** Zeitpunkt des angezeigten Radarbilds (ms), für den Hinweis auf der Karte */
+  const [radarTime, setRadarTime] = useState<number | null>(null);
   const basemap = useStore((s) => s.basemap);
   const blocks = useStore((s) => s.blocks);
   const overrides = useStore((s) => s.overrides);
@@ -526,11 +576,29 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
       addLayers(map);
       setStyleReady((n) => n + 1);
     });
+    // Quellenangaben eingeklappt (ⓘ) – die Luftbilder bringen viele mit. MapLibre klappt
+    // sie beim Nachladen neuer Quellen wieder auf; das nur rückgängig machen, solange
+    // man sie nicht selbst geöffnet hat.
+    let attribOpened = false;
+    container.current!.addEventListener('click', (e) => {
+      if ((e.target as Element).closest('.maplibregl-ctrl-attrib-button')) attribOpened = true;
+    });
+    map.on('idle', () => {
+      if (!attribOpened)
+        container.current?.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
+    });
     map.on('moveend', () => {
       const c = map.getCenter();
       useStore.getState().setView({ center: [c.lng, c.lat], zoom: map.getZoom() });
+      if (useStore.getState().showGpsTraces) {
+        const b = map.getBounds();
+        void syncFromServer([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()]);
+      }
     });
-    map.on('movestart', () => setMenu(null));
+    map.on('movestart', () => {
+      setMenu(null);
+      setWpMenu(null);
+    });
 
     const hitSuggestion = (e: MapMouseEvent): string | null => {
       if (!map.getLayer('sugg')) return null;
@@ -546,7 +614,7 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
       return (f[f.length - 1]?.properties?.id as string | undefined) ?? null;
     };
 
-    const hitRoute = (e: MapMouseEvent) => {
+    const hitRoute = (e: Pick<MapMouseEvent, 'lngLat' | 'point'>, tolerance = HIT_PX) => {
       if (useStore.getState().mode !== 'route') return null;
       const r = routeRef.current;
       if (!r) return null;
@@ -554,7 +622,50 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
       if (!proj) return null;
       const px = map.project(proj.point);
       const d = Math.hypot(px.x - e.point.x, px.y - e.point.y);
-      return d <= HIT_PX ? proj : null;
+      return d <= tolerance ? proj : null;
+    };
+
+    /** Gezogene Route: Vorschau vom Etappenstart über Maus/Finger zum Etappenende. */
+    const moveDrag = (point: { x: number; y: number }, ll: { lng: number; lat: number }) => {
+      const d = drag.current;
+      if (!d) return;
+      // erst ab 5 Pixel Bewegung gilt es als Ziehen (sonst Klick bzw. Tipp)
+      if (!d.active && Math.hypot(point.x - d.x, point.y - d.y) > 5) d.active = true;
+      if (!d.active) return;
+      const wps = useStore.getState().waypoints;
+      const a = wps[d.leg];
+      const b = wps[d.leg + 1];
+      const p: LngLat = [ll.lng, ll.lat];
+      d.last = p;
+      setData(map, 'drag', {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            properties: {},
+            geometry: { type: 'LineString', coordinates: [[a.lng, a.lat], p, [b.lng, b.lat]] },
+          },
+          { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: p } },
+        ],
+      });
+      map.getCanvas().style.cursor = 'grabbing';
+      setTip(null);
+    };
+    const finishDrag = () => {
+      const d = drag.current;
+      drag.current = null;
+      setData(map, 'drag', EMPTY);
+      map.getCanvas().style.cursor = '';
+      map.dragPan.enable();
+      if (!d?.active || !d.last) return;
+      setMenu(null);
+      const r2 = routeRef.current;
+      if (r2) dragRoute(r2, d.d0, d.last);
+      else useStore.getState().insertWaypoint(d.leg + 1, d.last);
+    };
+    const legAt = (distance: number) => {
+      const r = routeRef.current;
+      return r ? r.legRanges.findIndex((l) => r.dist[l.from] <= distance && r.dist[l.to] >= distance) : -1;
     };
 
     map.on('mousemove', (e) => {
@@ -564,29 +675,8 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
         return;
       }
       const st = useStore.getState();
-      const d = drag.current;
-      if (d) {
-        // erst ab 5 Pixel Bewegung gilt es als Ziehen (sonst Klick)
-        if (!d.active && Math.hypot(e.point.x - d.x, e.point.y - d.y) > 5) d.active = true;
-        if (d.active) {
-          const wps = st.waypoints;
-          const a = wps[d.leg];
-          const b = wps[d.leg + 1];
-          const p: LngLat = [e.lngLat.lng, e.lngLat.lat];
-          setData(map, 'drag', {
-            type: 'FeatureCollection',
-            features: [
-              {
-                type: 'Feature',
-                properties: {},
-                geometry: { type: 'LineString', coordinates: [[a.lng, a.lat], p, [b.lng, b.lat]] },
-              },
-              { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: p } },
-            ],
-          });
-          map.getCanvas().style.cursor = 'grabbing';
-          setTip(null);
-        }
+      if (drag.current) {
+        moveDrag(e.point, e.lngLat);
         return;
       }
       const hit = hitRoute(e);
@@ -601,32 +691,67 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
       const st = useStore.getState();
       if (e.originalEvent.button !== 0 || st.mode !== 'route' || st.selection?.end === null) return;
       const hit = hitRoute(e);
-      const r = routeRef.current;
-      if (!hit || !r) return;
-      const leg = r.legRanges.findIndex((l) => r.dist[l.from] <= hit.distance && r.dist[l.to] >= hit.distance);
+      if (!hit) return;
+      const leg = legAt(hit.distance);
       if (leg < 0) return;
       e.preventDefault(); // Karte nicht verschieben
       drag.current = { x: e.point.x, y: e.point.y, leg, d0: hit.distance, active: false };
-      const finish = (ev: MouseEvent) => {
+      const finish = () => {
         window.removeEventListener('mouseup', finish);
-        const d = drag.current;
-        drag.current = null;
-        setData(map, 'drag', EMPTY);
-        map.getCanvas().style.cursor = '';
-        if (!d?.active) return;
-        const rect = map.getCanvas().getBoundingClientRect();
-        const p = map.unproject([ev.clientX - rect.left, ev.clientY - rect.top]);
-        setMenu(null);
-        const r2 = routeRef.current;
-        if (r2) dragRoute(r2, d.d0, [p.lng, p.lat]);
-        else useStore.getState().insertWaypoint(d.leg + 1, [p.lng, p.lat]);
+        finishDrag();
       };
       window.addEventListener('mouseup', finish);
     });
 
+    // Touch: lange auf die Route drücken, dann ziehen. Kurzes Wischen verschiebt weiter die Karte.
+    let press: { timer: number; x: number; y: number } | null = null;
+    const cancelPress = () => {
+      if (press) window.clearTimeout(press.timer);
+      press = null;
+    };
+    map.on('touchstart', (e) => {
+      cancelPress();
+      const st = useStore.getState();
+      if (e.points.length !== 1 || st.mode !== 'route' || st.selection?.end === null) return;
+      const hit = hitRoute(e, TOUCH_HIT_PX);
+      if (!hit) return;
+      const leg = legAt(hit.distance);
+      if (leg < 0) return;
+      const { x, y } = e.point;
+      press = {
+        x,
+        y,
+        timer: window.setTimeout(() => {
+          press = null;
+          drag.current = { x, y, leg, d0: hit.distance, active: false };
+          map.dragPan.disable();
+          navigator.vibrate?.(15);
+        }, LONG_PRESS_MS),
+      };
+    });
+    map.on('touchmove', (e) => {
+      if (press && Math.hypot(e.point.x - press.x, e.point.y - press.y) > 8) cancelPress();
+      if (drag.current) {
+        e.preventDefault();
+        moveDrag(e.point, e.lngLat);
+      }
+    });
+    map.on('touchend', () => {
+      cancelPress();
+      if (drag.current) finishDrag();
+    });
+    map.on('touchcancel', () => {
+      cancelPress();
+      if (drag.current) {
+        drag.current.active = false;
+        finishDrag();
+      }
+    });
+
     // Rechtsklick auf die Route: Menü für das Stück an dieser Stelle
     map.on('contextmenu', (e) => {
-      const hit = hitRoute(e);
+      if (drag.current) return;
+      const hit = hitRoute(e, touch ? TOUCH_HIT_PX : HIT_PX);
       if (!hit) return;
       e.preventDefault();
       setTip(null);
@@ -667,7 +792,8 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
         else st.setLoopStart([e.lngLat.lng, e.lngLat.lat]);
         return;
       }
-      const hit = hitRoute(e);
+      setWpMenu(null);
+      const hit = hitRoute(e, touch ? TOUCH_HIT_PX : HIT_PX);
       const sel = selectionRef.current;
       // Auswahl läuft: zweiter Klick auf die Route setzt das Ende
       if (sel && sel.end === null) {
@@ -699,7 +825,7 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
         const b = new LngLatBounds();
         coords.forEach((c) => b.extend(c));
         const sidebarRight = window.innerWidth > 760 ? 40 : 20;
-        map.fitBounds(b, { padding: { top: 90, bottom: 170, left: sidebarRight, right: 60 }, maxZoom });
+        map.fitBounds(b, { padding: { top: 80, bottom: 70, left: sidebarRight, right: 60 }, maxZoom });
       },
       bounds: () => {
         const b = map.getBounds();
@@ -725,8 +851,11 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
     const map = mapRef.current;
     if (!map || !styleReady) return;
     setData(map, 'route', routeFeatures(route, pieces));
-    const dim = hideRoute ? 0 : mode !== 'route' ? 0.2 : stale ? 0.45 : 1;
+    const dim = hideRoute ? 0 : mode !== 'route' ? 0.2 : stale ? 0.6 : 1;
     map.setPaintProperty('route', 'line-opacity', dim);
+    // Wird neu berechnet: gestrichelt statt durchgezogen
+    map.setPaintProperty('route', 'line-dasharray', stale ? [1.6, 1.2] : undefined);
+    map.setPaintProperty('route-rough', 'line-opacity', dim);
     map.setPaintProperty('route-casing', 'line-opacity', hideRoute ? 0 : mode !== 'route' ? 0.2 : 1);
     map.setPaintProperty('overrides', 'line-opacity', hideRoute ? 0 : 1);
     map.setPaintProperty('uncertain', 'line-opacity', hideRoute || mode !== 'route' ? 0 : 0.95);
@@ -735,13 +864,9 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
     map.setPaintProperty('import', 'line-opacity', hideRoute ? 0 : 0.85);
     // Im Luftbild schmaler zeichnen, damit die Straße daneben sichtbar bleibt
     const sat = basemap === 'satellite' || basemap === 'aerial';
-    map.setPaintProperty('route', 'line-width', sat ? ['interpolate', ['linear'], ['zoom'], 12, 4, 17, 3] : 5);
+    map.setPaintProperty('route', 'line-width', sat ? ['interpolate', ['linear'], ['zoom'], 12, 5, 17, 4] : 6);
     map.setPaintProperty('uncertain', 'line-width', sat ? ['interpolate', ['linear'], ['zoom'], 12, 3, 17, 2.5] : 3.5);
-    map.setPaintProperty(
-      'route-casing',
-      'line-width',
-      sat ? ['interpolate', ['linear'], ['zoom'], 12, 6.5, 17, 4.5] : 8,
-    );
+    map.setPaintProperty('route-casing', 'line-width', sat ? ['interpolate', ['linear'], ['zoom'], 12, 8, 17, 6.5] : 9);
   }, [route, pieces, stale, styleReady, mode, hideRoute, basemap]);
 
   useEffect(() => {
@@ -865,7 +990,18 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
         // äußeres Element gehört MapLibre (Positionierungsklassen), Inhalt liegt im Kind
         const el = document.createElement('div');
         el.appendChild(document.createElement('div'));
-        el.addEventListener('click', (ev) => ev.stopPropagation());
+        let dragged = false;
+        el.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          if (dragged) {
+            dragged = false;
+            return;
+          }
+          const p = mapRef.current?.project(m!.getLngLat());
+          if (!p) return;
+          setMenu(null);
+          setWpMenu({ id: wp.id, x: p.x, y: p.y });
+        });
         el.addEventListener('contextmenu', (ev) => {
           ev.preventDefault();
           useStore.getState().removeWaypoint(wp.id);
@@ -875,6 +1011,10 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
           useStore.getState().removeWaypoint(wp.id);
         });
         m = new Marker({ element: el, draggable: true }).setLngLat([wp.lng, wp.lat]).addTo(map);
+        m.on('dragstart', () => {
+          dragged = true;
+          setWpMenu(null);
+        });
         m.on('dragend', () => {
           const p = m!.getLngLat();
           // nur in der Nähe des Punkts neu planen, der Rest der Route bleibt
@@ -943,6 +1083,54 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
     setData(map, 'traces-box', lineFC(cellOutlines()));
   }, [tracesVersion, styleReady]);
 
+  // Regenradar (RainViewer): jüngstes Bild, alle 10 Minuten aktualisiert
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !styleReady) return;
+    const remove = () => {
+      if (map.getLayer('radar')) map.removeLayer('radar');
+      if (map.getSource('radar')) map.removeSource('radar');
+    };
+    if (!showRadar) {
+      remove();
+      setRadarTime(null);
+      return;
+    }
+    let alive = true;
+    const load = async () => {
+      try {
+        const j = await (await fetch('https://api.rainviewer.com/public/weather-maps.json')).json();
+        const frame = j.radar?.past?.[j.radar.past.length - 1];
+        if (!alive || !frame) return;
+        const tiles = [`${j.host}${frame.path}/256/{z}/{x}/{y}/2/1_1.png`];
+        setRadarTime(frame.time * 1000);
+        const src = map.getSource('radar') as RasterTileSource | undefined;
+        if (src) src.setTiles(tiles);
+        else {
+          map.addSource('radar', {
+            type: 'raster',
+            tiles,
+            tileSize: 256,
+            maxzoom: 7,
+            attribution: 'Regenradar © RainViewer',
+          });
+          map.addLayer(
+            { id: 'radar', type: 'raster', source: 'radar', paint: { 'raster-opacity': 0.65 } },
+            map.getLayer('route-casing') ? 'route-casing' : undefined,
+          );
+        }
+      } catch {
+        /* Radar nicht erreichbar – Karte bleibt ohne */
+      }
+    };
+    void load();
+    const timer = window.setInterval(load, 10 * 60_000);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+    };
+  }, [showRadar, styleReady]);
+
   // Radrouten-Netz und gewählte Radroute
   const netOverlay = useStore((s) => s.netOverlay);
   const networkKind = useStore((s) => s.networkKind);
@@ -970,6 +1158,7 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
   const destinations = useStore((s) => s.destinations);
   const activePoi = useStore((s) => s.activePoi);
   const poiMarkers = useRef(new Map<string, Marker>());
+  const poiRoots = useRef(new Map<string, Root>());
   const poiOwner = useRef<MlMap | null>(null);
   useEffect(() => {
     const map = mapRef.current;
@@ -977,6 +1166,8 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
     if (poiOwner.current !== map) {
       poiMarkers.current.forEach((m) => m.remove());
       poiMarkers.current.clear();
+      poiRoots.current.forEach((r) => queueMicrotask(() => r.unmount()));
+      poiRoots.current.clear();
       poiOwner.current = map;
     }
     const list = mode === 'route' ? stops : mode === 'explore' ? destinations : [];
@@ -988,9 +1179,11 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
         const el = document.createElement('div');
         const inner = document.createElement('div');
         inner.className = 'poi';
-        inner.textContent = p.icon;
         inner.title = p.name;
         el.appendChild(inner);
+        const root = createRoot(inner);
+        root.render(<Icon name={p.icon} size={16} />);
+        poiRoots.current.set(p.id, root);
         el.addEventListener('click', (ev) => {
           ev.stopPropagation();
           setMenu(null);
@@ -1007,6 +1200,10 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
       if (!seen.has(id)) {
         m.remove();
         poiMarkers.current.delete(id);
+        const root = poiRoots.current.get(id);
+        poiRoots.current.delete(id);
+        // nicht mitten im Rendern abbauen
+        if (root) queueMicrotask(() => root.unmount());
       }
     }
   }, [stops, destinations, mode, activePoi, styleReady]);
@@ -1122,14 +1319,7 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
       {menu && (
         <div
           className="route-menu"
-          style={{
-            left: menu.x,
-            top: menu.y,
-            // am rechten bzw. unteren Rand in die andere Richtung aufklappen
-            transform: `translate(${
-              menu.x > (container.current?.clientWidth ?? 0) - 280 ? 'calc(-100% - 8px)' : '8px'
-            }, ${menu.y > (container.current?.clientHeight ?? 0) - 440 ? 'calc(-100% - 8px)' : '8px'})`,
-          }}
+          style={menuPlacement(menu, container.current)}
           onClick={(e) => e.stopPropagation()}
           onContextMenu={(e) => e.preventDefault()}
         >
@@ -1150,48 +1340,99 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
                 </small>
               </div>
               <button onClick={avoidStretch}>
-                <span className="ico">⤳</span> Dieses Stück umfahren
+                <Icon name="detour" className="ico" /> Dieses Stück umfahren
               </button>
               <button onClick={selectStretch}>
-                <span className="ico">▭</span> Stück markieren <small>(anders planen …)</small>
+                <Icon name="marquee" className="ico" /> Stück markieren <small>(anders planen, Alternative)</small>
               </button>
-              <button onClick={blockStretch}>
-                <span className="ico">⛔</span> Stück immer meiden
-              </button>
-              {canAvoid(settings.surface[stretch.surface]) && (
-                <button onClick={() => avoidKind('surface')}>
-                  <span className="ico">↓</span> {surfaceLabel(stretch.surface)} generell meiden
-                </button>
-              )}
-              {canAvoid(settings.road[stretch.road]) && (
-                <button onClick={() => avoidKind('road')}>
-                  <span className="ico">↓</span> {roadLabel(stretch.road)} generell meiden
-                </button>
-              )}
-              <hr />
             </>
           )}
-          <button onClick={startSelection}>
-            <span className="ico">⟷</span> Abschnitt ab hier markieren
-          </button>
           <button onClick={insertHere}>
-            <span className="ico">＋</span> Wegpunkt einfügen
+            <Icon name="plus" className="ico" /> Wegpunkt hier einfügen
           </button>
-          <hr />
-          {(basemap !== 'satellite' && basemap !== 'aerial') || (mapRef.current?.getZoom() ?? 0) < 16 ? (
-            <button onClick={satelliteHere}>
-              <span className="ico">◩</span> Im Luftbild ansehen
+          {!menu.more ? (
+            <button className="menu-more" onClick={() => setMenu({ ...menu, more: true })} aria-expanded={false}>
+              <Icon name="chevron-down" className="ico" /> Mehr …
             </button>
-          ) : null}
-          <button onClick={() => openExternal('streetview')}>
-            <span className="ico">◉</span> Google Street View
+          ) : (
+            <>
+              <button onClick={startSelection}>
+                <Icon name="stretch" className="ico" /> Abschnitt ab hier markieren <small>(Ende antippen)</small>
+              </button>
+              {stretch && (
+                <>
+                  <div className="menu-section warn">Gilt dauerhaft für alle Routen</div>
+                  <button onClick={blockStretch}>
+                    <Icon name="ban" className="ico warn" /> Dieses Stück immer meiden
+                  </button>
+                  {canAvoid(settings.surface[stretch.surface]) && (
+                    <button onClick={() => avoidKind('surface')}>
+                      <Icon name="arrow-down" className="ico warn" /> {surfaceLabel(stretch.surface)} generell meiden
+                    </button>
+                  )}
+                  {canAvoid(settings.road[stretch.road]) && (
+                    <button onClick={() => avoidKind('road')}>
+                      <Icon name="arrow-down" className="ico warn" /> {roadLabel(stretch.road)} generell meiden
+                    </button>
+                  )}
+                </>
+              )}
+              <div className="menu-section">Ansehen</div>
+              {(basemap !== 'satellite' && basemap !== 'aerial') || (mapRef.current?.getZoom() ?? 0) < 16 ? (
+                <button onClick={satelliteHere}>
+                  <Icon name="image" className="ico" /> Im Luftbild
+                </button>
+              ) : null}
+              <button onClick={() => openExternal('streetview')}>
+                <Icon name="person" className="ico" /> Google Street View
+              </button>
+              <button onClick={() => openExternal('mapillary')}>
+                <Icon name="camera" className="ico" /> Straßenfotos (Mapillary)
+              </button>
+              <button onClick={() => openExternal('komoot')}>
+                <Icon name="external" className="ico" /> In Komoot öffnen
+              </button>
+            </>
+          )}
+          <button className="menu-close" onClick={() => setMenu(null)}>
+            Schließen
           </button>
-          <button onClick={() => openExternal('mapillary')}>
-            <span className="ico">◎</span> Straßenfotos (Mapillary)
-          </button>
-          <button onClick={() => openExternal('komoot')}>
-            <span className="ico">◆</span> In Komoot öffnen (Highlights)
-          </button>
+        </div>
+      )}
+      {wpMenu &&
+        (() => {
+          const i = waypoints.findIndex((w) => w.id === wpMenu.id);
+          if (i < 0) return null;
+          const label = i === 0 ? 'Start' : i === waypoints.length - 1 ? 'Ziel' : `Zwischenpunkt ${i}`;
+          return (
+            <div
+              className="route-menu wp-menu"
+              style={{ left: wpMenu.x, top: wpMenu.y }}
+              onClick={(e) => e.stopPropagation()}
+              onContextMenu={(e) => e.preventDefault()}
+            >
+              <div className="menu-info">
+                <b>{label}</b>
+                <small>Zum Verschieben ziehen</small>
+              </div>
+              <button
+                onClick={() => {
+                  useStore.getState().removeWaypoint(wpMenu.id);
+                  setWpMenu(null);
+                }}
+              >
+                <Icon name="x" className="ico warn" /> Wegpunkt entfernen
+              </button>
+              <button className="menu-close" onClick={() => setWpMenu(null)}>
+                Schließen
+              </button>
+            </div>
+          );
+        })()}
+      {showRadar && radarTime && (
+        <div className="radar-chip" title="Niederschlag laut RainViewer, alle 10 Minuten neu">
+          <Icon name="radar" size={14} />
+          Regenradar · Stand {new Date(radarTime).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
         </div>
       )}
       {tip && route && !menu && (
@@ -1203,16 +1444,20 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
         />
       )}
       {(mode === 'loop' || mode === 'explore') && !loopStart && (
-        <div className="map-hint">Klicke auf die Karte, um den Startpunkt zu setzen</div>
+        <div className="map-hint">{touch ? 'Tippe' : 'Klicke'} auf die Karte, um den Startpunkt zu setzen</div>
       )}
       {mode === 'route' && selection && selection.end === null && (
-        <div className="map-hint">Klicke auf das Ende des Abschnitts · Esc bricht ab</div>
+        <div className="map-hint">
+          {touch ? 'Tippe' : 'Klicke'} auf das Ende des Abschnitts{touch ? '' : ' · Esc bricht ab'}
+        </div>
       )}
       {mode === 'route' && !waypoints.length && (
-        <div className="map-hint">Klicke auf die Karte, um den Start zu setzen</div>
+        <div className="map-hint">{touch ? 'Tippe' : 'Klicke'} auf die Karte, um den Start zu setzen</div>
       )}
       {mode === 'route' && waypoints.length === 1 && (
-        <div className="map-hint">Jetzt das Ziel oder einen Zwischenpunkt setzen</div>
+        <div className="map-hint">
+          Jetzt das Ziel setzen{touch ? ' · Route später lange drücken und ziehen zum Umplanen' : ''}
+        </div>
       )}
     </div>
   );

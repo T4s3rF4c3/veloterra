@@ -2,25 +2,29 @@ import type { LngLat } from '../domain/geo';
 import { generateProfile, type ProfileOptions } from '../domain/profile';
 import { parseBRouter, type LegResult, type Nogo, type Waypoint } from '../domain/route';
 import type { RoutingSettings } from '../domain/settings';
+import { useSite } from './site';
 
 /**
- * BRouter-Server: zur Laufzeit aus /config.js (Container-Variable BROUTER_URL
- * bzw. BROUTER_UPSTREAM), sonst beim Build VITE_BROUTER_URL, sonst der
- * öffentliche Server.
+ * BRouter-Server ohne Eintrag im Admin-Bereich: zur Laufzeit aus /config.js
+ * (Container-Variable BROUTER_URL bzw. BROUTER_UPSTREAM), sonst beim Build
+ * VITE_BROUTER_URL, sonst der öffentliche Server.
  */
-export const BROUTER_URL: string = (
+export const DEFAULT_BROUTER_URL: string = (
   (typeof window !== 'undefined' && window.__VELOTERRA__?.brouterUrl) ||
   import.meta.env.VITE_BROUTER_URL ||
   'https://brouter.de/brouter'
 ).replace(/\/+$/, '');
 
+/** Aktiver Server: Eintrag im Admin-Bereich (Veloterra-Server) geht vor. */
+export const brouterUrl = () => (useSite.getState().config.brouterUrl || DEFAULT_BROUTER_URL).replace(/\/+$/, '');
+
 /** Eigener Server ohne Drosselung? Dann dürfen Anfragen parallel laufen. */
-export const OWN_SERVER = !/^https:\/\/brouter\.de\//.test(BROUTER_URL);
+export const ownServer = () => !/^https:\/\/brouter\.de\//.test(brouterUrl());
 
 const profileIds = new Map<string, Promise<string>>();
 
 async function uploadProfile(text: string): Promise<string> {
-  const res = await fetch(`${BROUTER_URL}/profile`, {
+  const res = await fetch(`${brouterUrl()}/profile`, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
     body: text,
@@ -31,11 +35,13 @@ async function uploadProfile(text: string): Promise<string> {
 }
 
 function profileId(text: string, force = false): Promise<string> {
-  let p = profileIds.get(text);
+  // Profil-IDs gelten nur auf dem Server, der sie vergeben hat
+  const key = `${brouterUrl()}\n${text}`;
+  let p = profileIds.get(key);
   if (!p || force) {
     p = uploadProfile(text);
-    p.catch(() => profileIds.delete(text));
-    profileIds.set(text, p);
+    p.catch(() => profileIds.delete(key));
+    profileIds.set(key, p);
   }
   return p;
 }
@@ -85,7 +91,7 @@ const sleep = (ms: number, signal?: AbortSignal) =>
  * brouter.de begrenzt Anfragen pro IP – dort nacheinander anfragen. Ein
  * eigener Server verträgt mehrere gleichzeitig.
  */
-const MAX_PARALLEL = OWN_SERVER ? 4 : 1;
+const maxParallel = () => (ownServer() ? 4 : 1);
 let running = 0;
 const waiting: (() => void)[] = [];
 function enqueue<T>(fn: () => Promise<T>): Promise<T> {
@@ -99,7 +105,7 @@ function enqueue<T>(fn: () => Promise<T>): Promise<T> {
           waiting.shift()?.();
         });
     };
-    if (running < MAX_PARALLEL) start();
+    if (running < maxParallel()) start();
     else waiting.push(start);
   });
 }
@@ -165,7 +171,7 @@ async function requestNow(
   for (let attempt = 0; attempt < 5; attempt++) {
     const id = await profileId(text, reuploaded);
     const query = new URLSearchParams({ ...params, profile: id, format: 'geojson', turnInstructionMode: '9' });
-    const res = await fetch(`${BROUTER_URL}?${query.toString()}`, { signal });
+    const res = await fetch(`${brouterUrl()}?${query.toString()}`, { signal });
     const body = await res.text();
     if (res.ok && body.trimStart().startsWith('{')) return parseBRouter(JSON.parse(body));
     // Rate-Limit → kurz warten und erneut versuchen

@@ -41,7 +41,7 @@ export function windClass(hw: number, speed: number): WindClass {
   return r > 0.4 ? 'head' : r < -0.4 ? 'tail' : 'cross';
 }
 
-export const WIND_COLORS: Record<WindClass, string> = { head: '#dc2626', cross: '#a3a3a3', tail: '#16a34a' };
+export const WIND_COLORS: Record<WindClass, string> = { head: '#f28b82', cross: '#9aa0a6', tail: '#81c995' };
 export const WIND_LABELS: Record<WindClass, string> = { head: 'Gegenwind', cross: 'Seitenwind', tail: 'Rückenwind' };
 
 /**

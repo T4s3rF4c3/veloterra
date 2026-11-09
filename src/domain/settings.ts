@@ -30,34 +30,49 @@ export interface CategoryInfo<K extends string> {
 }
 
 export const SURFACES: CategoryInfo<SurfaceCat>[] = [
-  { key: 'asphalt', label: 'Asphalt', hint: 'asphalt, paved', color: '#2563eb' },
-  { key: 'concrete', label: 'Beton', hint: 'Betonplatten, Betonwege', color: '#0891b2' },
-  { key: 'paving', label: 'Pflaster (glatt)', hint: 'Verbundpflaster, Holz, Metall', color: '#8b5cf6' },
-  { key: 'cobble', label: 'Kopfsteinpflaster', hint: 'sett, cobblestone, Rasengitter', color: '#db2777' },
-  { key: 'compacted', label: 'Feiner Schotter', hint: 'compacted, fine_gravel', color: '#f59e0b' },
-  { key: 'gravel', label: 'Schotter', hint: 'gravel, pebblestone', color: '#ea580c' },
-  { key: 'unpaved', label: 'Unbefestigt', hint: 'Erde, Gras, Sand, Wurzeln', color: '#b91c1c' },
-  { key: 'unknown', label: 'Unbekannt', hint: 'kein Belag in OSM erfasst', color: '#94a3b8' },
+  { key: 'asphalt', label: 'Asphalt', hint: 'asphalt, paved', color: '#4dabf7' },
+  { key: 'concrete', label: 'Beton', hint: 'Betonplatten, Betonwege', color: '#4dabf7' },
+  { key: 'paving', label: 'Pflaster (glatt)', hint: 'Verbundpflaster, Holz, Metall', color: '#66d9e8' },
+  { key: 'cobble', label: 'Kopfsteinpflaster', hint: 'sett, cobblestone, Rasengitter', color: '#ff922b' },
+  { key: 'compacted', label: 'Feiner Schotter', hint: 'compacted, fine_gravel', color: '#ffd43b' },
+  { key: 'gravel', label: 'Schotter', hint: 'gravel, pebblestone', color: '#ff922b' },
+  { key: 'unpaved', label: 'Unbefestigt', hint: 'Erde, Gras, Sand, Wurzeln', color: '#ff6b6b' },
+  { key: 'unknown', label: 'Unbekannt', hint: 'kein Belag in OSM erfasst', color: '#adb5bd' },
 ];
 
+/**
+ * Belagsklasse 1–5 wie in einer Straßenzustandskarte (1 = glatt, 5 = unbefestigt,
+ * 0 = unbekannt). Die Farben der Beläge folgen dieser Rampe.
+ */
+export const SURFACE_CLASS: Record<SurfaceCat, number> = {
+  asphalt: 1,
+  concrete: 1,
+  paving: 2,
+  compacted: 3,
+  cobble: 4,
+  gravel: 4,
+  unpaved: 5,
+  unknown: 0,
+};
+
 export const ROADS: CategoryInfo<RoadCat>[] = [
-  { key: 'primary', label: 'Bundesstraße', hint: 'primary, trunk', color: '#dc2626' },
-  { key: 'secondary', label: 'Landstraße', hint: 'secondary', color: '#f97316' },
-  { key: 'tertiary', label: 'Kreisstraße', hint: 'tertiary', color: '#eab308' },
-  { key: 'minor', label: 'Nebenstraße', hint: 'unclassified', color: '#22c55e' },
-  { key: 'residential', label: 'Wohnstraße', hint: 'residential, service', color: '#14b8a6' },
-  { key: 'cycleway', label: 'Radweg', hint: 'cycleway, Fahrradstraße', color: '#2563eb' },
-  { key: 'track', label: 'Wirtschaftsweg', hint: 'track', color: '#a16207' },
-  { key: 'path', label: 'Pfad / Trail', hint: 'path, footway, bridleway', color: '#7c3aed' },
+  { key: 'primary', label: 'Bundesstraße', hint: 'primary, trunk', color: '#ff6b6b' },
+  { key: 'secondary', label: 'Landstraße', hint: 'secondary', color: '#ff922b' },
+  { key: 'tertiary', label: 'Kreisstraße', hint: 'tertiary', color: '#ffd43b' },
+  { key: 'minor', label: 'Nebenstraße', hint: 'unclassified', color: '#dee2e6' },
+  { key: 'residential', label: 'Wohnstraße', hint: 'residential, service', color: '#a5b4c4' },
+  { key: 'cycleway', label: 'Radweg', hint: 'cycleway, Fahrradstraße', color: '#63e6be' },
+  { key: 'track', label: 'Wirtschaftsweg', hint: 'track', color: '#c9a27e' },
+  { key: 'path', label: 'Pfad / Trail', hint: 'path, footway, bridleway', color: '#f783ac' },
 ];
 
 export type BikeType = 'road' | 'gravel' | 'mtb' | 'trekking';
 
-export const BIKE_TYPES: { key: BikeType; label: string; icon: string }[] = [
-  { key: 'road', label: 'Rennrad', icon: '🚴' },
-  { key: 'gravel', label: 'Gravel', icon: '🪨' },
-  { key: 'mtb', label: 'MTB', icon: '🚵' },
-  { key: 'trekking', label: 'Trekking', icon: '🚲' },
+export const BIKE_TYPES: { key: BikeType; label: string }[] = [
+  { key: 'road', label: 'Rennrad' },
+  { key: 'gravel', label: 'Gravel' },
+  { key: 'mtb', label: 'MTB' },
+  { key: 'trekking', label: 'Trekking' },
 ];
 
 /**

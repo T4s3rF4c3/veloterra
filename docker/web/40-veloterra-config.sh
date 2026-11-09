@@ -9,6 +9,25 @@ rm -f "$CONF_DIR"/*.conf
 
 url="${BROUTER_URL:-}"
 upstream="${BROUTER_UPSTREAM:-}"
+api="${API_UPSTREAM:-}"
+
+# Veloterra-Server (Admin, GPS-Spuren für alle) unter /api
+if [ -n "$api" ]; then
+  api="${api%/}"
+  cat > "$CONF_DIR/api.conf" <<NGINX
+location /api/ {
+    proxy_pass ${api};
+    proxy_set_header Host \$host;
+    proxy_set_header X-Real-IP \$remote_addr;
+    proxy_set_header X-Forwarded-Proto \$http_x_forwarded_proto;
+    proxy_read_timeout 60s;
+    client_max_body_size 64k;
+}
+NGINX
+  echo "veloterra: Admin und GPS-Spuren über /api an ${api}"
+else
+  echo "veloterra: ohne Veloterra-Server (Admin-Bereich nicht verfügbar)"
+fi
 
 if [ -n "$upstream" ]; then
   upstream="${upstream%/}"

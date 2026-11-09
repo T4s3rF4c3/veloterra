@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { clearHeat, importActivities, useHeat, type ImportResult } from '../api/heatStore';
 import { useStore } from '../store';
 import { Panel } from './Panel';
+import { Icon } from './Icon';
 
 /** Eigene Fahrten importieren (Strava-Export, GPX/TCX/FIT) für die persönliche Heatmap. */
 export function HeatPanel() {
@@ -30,7 +31,8 @@ export function HeatPanel() {
   return (
     <Panel
       id="heat"
-      icon="🔥"
+      defaultOpen
+      icon="flame"
       title="Meine Heatmap"
       badge={tracks || undefined}
       summary={
@@ -59,7 +61,7 @@ export function HeatPanel() {
       ) : (
         <div className="heat-actions">
           <button className="primary" onClick={() => input.current?.click()}>
-            ⇪ Fahrten importieren
+            <Icon name="upload" /> Fahrten importieren
           </button>
           {tracks > 0 && (
             <button

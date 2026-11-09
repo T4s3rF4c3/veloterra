@@ -5,6 +5,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import { loadHeat } from './api/heatStore';
 import { loadTraceCache } from './api/osmTraces';
+import { initSite } from './api/site';
 import { initHistory } from './history';
 import './styles.css';
 
@@ -17,6 +18,8 @@ initHistory();
 // eigene Heatmap aus dem Browser-Speicher laden
 void loadHeat();
 void loadTraceCache();
+// Veloterra-Server (Admin, seitenweite Einstellungen, vorab geladene GPS-Spuren)
+void initSite();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

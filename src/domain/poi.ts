@@ -1,10 +1,11 @@
 import type { OsmElement } from '../api/overpass';
+import type { IconName } from '../components/Icon';
 import { haversine, simplify, type LngLat } from './geo';
 
 export interface PoiCategory {
   key: string;
   label: string;
-  icon: string;
+  icon: IconName;
   /** Overpass-Filter (ohne Elementtyp) */
   filters: string[];
   /** auch Flächen/Wege abfragen (Seen, Burgen …) */
@@ -20,26 +21,32 @@ export const STOP_CATEGORIES: PoiCategory[] = [
   {
     key: 'cafe',
     label: 'Café & Bäcker',
-    icon: '☕',
+    icon: 'coffee',
     filters: ['[amenity=cafe]', '[shop=bakery]', '[amenity=ice_cream]', '[amenity=biergarten]'],
     photon: ['amenity:cafe', 'shop:bakery', 'amenity:ice_cream', 'amenity:biergarten'],
   },
   {
     key: 'water',
     label: 'Trinkwasser',
-    icon: '💧',
+    icon: 'droplet',
     filters: ['[amenity=drinking_water]', '[amenity=water_point]'],
     photon: ['amenity:drinking_water'],
   },
   {
     key: 'bike',
     label: 'Rad-Service',
-    icon: '🔧',
+    icon: 'wrench',
     filters: ['[amenity=bicycle_repair_station]', '[shop=bicycle]'],
     photon: ['shop:bicycle', 'amenity:bicycle_repair_station'],
   },
-  { key: 'view', label: 'Aussicht', icon: '🔭', filters: ['[tourism=viewpoint]'], photon: ['tourism:viewpoint'] },
-  { key: 'toilet', label: 'WC', icon: '🚻', filters: ['[amenity=toilets]'], photon: ['amenity:toilets'] },
+  {
+    key: 'view',
+    label: 'Aussicht',
+    icon: 'binoculars',
+    filters: ['[tourism=viewpoint]'],
+    photon: ['tourism:viewpoint'],
+  },
+  { key: 'toilet', label: 'WC', icon: 'toilet', filters: ['[amenity=toilets]'], photon: ['amenity:toilets'] },
 ];
 
 /** Lohnende Ziele für eine Ausfahrt */
@@ -47,21 +54,21 @@ export const DESTINATION_CATEGORIES: PoiCategory[] = [
   {
     key: 'view',
     label: 'Aussichtspunkte',
-    icon: '🔭',
+    icon: 'binoculars',
     filters: ['[tourism=viewpoint][name]'],
     photon: ['tourism:viewpoint'],
   },
   {
     key: 'peak',
     label: 'Gipfel & Pässe',
-    icon: '⛰️',
+    icon: 'mountain',
     filters: ['[natural=peak][name]', '[mountain_pass=yes][name]'],
     photon: ['natural:peak', 'mountain_pass:yes'],
   },
   {
     key: 'castle',
     label: 'Burgen & Schlösser',
-    icon: '🏰',
+    icon: 'castle',
     filters: ['[historic=castle][name]', '[historic=monastery][name]'],
     areas: true,
     photon: ['historic:castle', 'historic:monastery'],
@@ -69,7 +76,7 @@ export const DESTINATION_CATEGORIES: PoiCategory[] = [
   {
     key: 'lake',
     label: 'Seen & Talsperren',
-    icon: '🌊',
+    icon: 'waves',
     filters: ['[natural=water][water~"^(lake|reservoir)$"][name]', '[waterway=dam][name]'],
     areas: true,
     photon: ['natural:water', 'waterway:dam', 'landuse:reservoir'],
@@ -78,7 +85,7 @@ export const DESTINATION_CATEGORIES: PoiCategory[] = [
   {
     key: 'cafe',
     label: 'Ausflugscafés & Biergärten',
-    icon: '☕',
+    icon: 'coffee',
     filters: [
       '[amenity=biergarten][name]',
       '[amenity=cafe][name][cuisine~"cake|coffee_shop"]',
@@ -89,7 +96,7 @@ export const DESTINATION_CATEGORIES: PoiCategory[] = [
   {
     key: 'bike',
     label: 'Radler-Treffs',
-    icon: '🚲',
+    icon: 'bike',
     filters: [
       '[amenity=cafe][name]["bicycle"~"yes|designated"]',
       '[amenity=cafe][name][~"^service:bicycle"~"."]',
@@ -102,7 +109,7 @@ export const DESTINATION_CATEGORIES: PoiCategory[] = [
 export interface Poi {
   id: string;
   category: string;
-  icon: string;
+  icon: IconName;
   name: string;
   coord: LngLat;
   tags: Record<string, string>;

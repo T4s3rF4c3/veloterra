@@ -6,6 +6,8 @@ import { formatKm, pointAtDistance, sliceLine, type LngLat } from '../domain/geo
 import type { CombinedRoute } from '../domain/route';
 import { uncertaintyText, type UncertainSection } from '../domain/surfaceCheck';
 import { useStore } from '../store';
+import { Icon } from './Icon';
+import { useSite } from '../api/site';
 
 const KIND_CLASS: Record<UncertainSection['kind'], string> = { missing: 'bad', unclear: 'bad', guessed: 'ok' };
 const KIND_LABEL: Record<UncertainSection['kind'], string> = {
@@ -16,7 +18,8 @@ const KIND_LABEL: Record<UncertainSection['kind'], string> = {
 
 /** Ein Foto vom Abschnitt (Panoramax/Mapillary), falls vorhanden. */
 function SectionPhoto({ line }: { line: LngLat[] }) {
-  const token = useStore((s) => s.mapillaryToken);
+  const siteToken = useSite((s) => s.config.mapillaryToken);
+  const token = useStore((s) => s.mapillaryToken) || siteToken;
   const [photo, setPhoto] = useState<Photo | null | undefined>(undefined);
   const key = `${line[0]}|${line[line.length - 1]}`;
   useEffect(() => {
@@ -41,6 +44,27 @@ function SectionPhoto({ line }: { line: LngLat[] }) {
   );
 }
 
+/** Prüfen eines Abschnitts: Luftbild, Route ausblenden, hinzoomen. */
+function useCheck(route: CombinedRoute, fit: (c: LngLat[], maxZoom?: number) => void) {
+  const active = useStore((s) => s.activeCheck);
+  const st = useStore.getState;
+  const close = () => {
+    st().setActiveCheck(null);
+    st().setSelection(null);
+    st().setHideRoute(false);
+  };
+  const show = (s: UncertainSection) => {
+    if (active === s.id) return close();
+    const b = st().basemap;
+    if (b !== 'satellite' && b !== 'aerial') st().setBasemap('aerial');
+    st().setActiveCheck(s.id);
+    st().setSelection({ start: s.start, end: s.end });
+    st().setHideRoute(true);
+    fit(sliceLine(route.coords, route.dist, s.start, s.end), 17);
+  };
+  return { active, close, show };
+}
+
 /**
  * Belags-Check: Abschnitte, deren Belag in OSM fehlt oder nur geschätzt ist.
  * Ein Klick zeigt die Stelle im Luftbild (Route ausgeblendet) mit Foto.
@@ -55,27 +79,11 @@ export function SurfaceCheck({
   fit: (c: LngLat[], maxZoom?: number) => void;
 }) {
   const checked = useStore((s) => s.checkedSurfaces);
-  const active = useStore((s) => s.activeCheck);
   const st = useStore.getState;
+  const { active, close, show } = useCheck(route, fit);
   const open = sections.filter((s) => !checked.includes(s.id));
   const done = sections.length - open.length;
   const total = open.reduce((a, s) => a + s.end - s.start, 0);
-
-  const close = () => {
-    st().setActiveCheck(null);
-    st().setSelection(null);
-    st().setHideRoute(false);
-  };
-
-  const show = (s: UncertainSection) => {
-    if (active === s.id) return close();
-    const b = st().basemap;
-    if (b !== 'satellite' && b !== 'aerial') st().setBasemap('aerial');
-    st().setActiveCheck(s.id);
-    st().setSelection({ start: s.start, end: s.end });
-    st().setHideRoute(true);
-    fit(sliceLine(route.coords, route.dist, s.start, s.end), 17);
-  };
 
   const next = (s: UncertainSection) => {
     const rest = open.filter((x) => x.id !== s.id);
@@ -89,20 +97,23 @@ export function SurfaceCheck({
   return (
     <Panel
       id="surface-check"
-      icon="🔍"
+      icon="search"
       title="Belags-Check"
-      badge={open.length > 0 ? open.length : '✓'}
+      tone={open.length > 0 ? 'warn' : undefined}
+      badge={open.length > 0 ? open.length : <Icon name="check" size={12} />}
       summary={open.length ? `${formatKm(total)} mit unsicherem Belag` : 'alles geprüft'}
       actions={
         done > 0 && (
           <button className="mini ghost" onClick={() => st().resetCheckedSurfaces()} title="Bestätigungen zurücksetzen">
-            {done} geprüft ↺
+            {done} geprüft <Icon name="rotate-ccw" size={13} />
           </button>
         )
       }
     >
       {open.length === 0 ? (
-        <p className="muted small">Alle unsicheren Abschnitte geprüft ✓</p>
+        <p className="muted small">
+          <Icon name="check" size={13} /> Alle unsicheren Abschnitte geprüft
+        </p>
       ) : (
         <p className="muted small">
           {open.length} {open.length === 1 ? 'Abschnitt' : 'Abschnitte'} ({formatKm(total)}) mit unbekanntem oder nur
@@ -140,7 +151,7 @@ export function SurfaceCheck({
                       }}
                       title="Belag ist in Ordnung – nicht mehr anzeigen"
                     >
-                      ✓ Passt
+                      <Icon name="check" /> Passt
                     </button>
                     <button
                       onClick={() => {
@@ -149,10 +160,10 @@ export function SurfaceCheck({
                       }}
                       title="Abschnitt umfahren – die Etappe wird neu berechnet"
                     >
-                      ⤳ Umgehen
+                      <Icon name="detour" /> Umfahren
                     </button>
                     <button className="ghost" onClick={() => next(s)} title="Zum nächsten Abschnitt">
-                      Weiter →
+                      Weiter <Icon name="arrow-right" size={14} />
                     </button>
                   </div>
                   <div className="poi-links">

@@ -2,7 +2,7 @@
 
 Routenplaner für **Rennrad, Gravel, MTB und Trekking** mit feiner Steuerung nach **Untergrund** und **Straßenart** – und der Möglichkeit, einzelne Abschnitte nachträglich gezielt umzuplanen.
 
-Routing: [BRouter](https://brouter.de) mit einem aus den Einstellungen generierten Profil · Daten: OpenStreetMap (Overpass, Photon) · Karte: OpenFreeMap · Luftbild: Esri World Imagery und amtliche Luftbilder (RLP, NRW, Hessen, Bayern) · Wind: Open-Meteo · Fotos: Panoramax, optional Mapillary
+Routing: [BRouter](https://brouter.de) mit einem aus den Einstellungen generierten Profil · Daten: OpenStreetMap (Overpass, Photon) · Karte: OpenFreeMap · Luftbild: Esri World Imagery und amtliche Luftbilder (RLP, NRW, Hessen, Bayern) · Wetter & Wind: Open-Meteo · Regenradar: RainViewer · Fotos: Panoramax, optional Mapillary
 
 ## Starten
 
@@ -15,43 +15,53 @@ Dann <http://localhost:5173> öffnen.
 
 ## Bedienung
 
-Oben links auf der Karte: **↶ ↷** (Rückgängig/Wiederholen), **Ebenen** (Kartenstil, Einfärbung, Stopps, Fotos, Radrouten-Netz) und **Route ausblenden**. In der Seitenleiste lassen sich alle Bereiche (Wind, Belags-Check, Anstiege, Meine Routen, Routing-Profil …) auf- und zuklappen; der Browser merkt sich, was offen ist.
+Die Seitenleiste hat fünf Bereiche (Leiste links, auf dem Handy oben):
+
+| Bereich | Inhalt |
+|---|---|
+| **Planen** | Route setzen und bearbeiten, Übersicht (Distanz, Anstieg, Belag, Straßenart), Export/Import; darunter Wetter & Wind, Belags-Check, Anstiege, Stopps und angepasste Etappen als aufklappbare Liste |
+| **Entdecken** | Rundtour vorschlagen lassen, Ziele in der Umgebung, beschilderte Radwege |
+| **Meine** | Gespeicherte Routen und eigene Heatmap |
+| **Profil** | Radtyp (Rennrad, Gravel, MTB, Trekking), Voreinstellungen, Belag/Straßenart im Detail, dauerhafte Sperren |
+| **Admin** | Nur mit Anmeldung (Veloterra-Server): Mapillary-Token und BRouter-/Overpass-Server für alle Besucher, GPS-Spuren einer Region für alle vorab laden, Datensicherung als Datei |
+
+Der aktuelle Radtyp steht oben rechts immer sichtbar; ein Klick öffnet das Profil. Die Karte startet immer mit **Luftbild DE**. Oben links auf der Karte: **↶ ↷** (Rückgängig/Wiederholen), **Ebenen** (Kartenstil, Einfärbung, Stopps, Fotos, Radrouten-Netz, Heatmaps) und **Route ausblenden**.
 
 | Aktion | So geht's |
 |---|---|
 | Start / Ziel / Etappen | Auf die Karte klicken |
-| Wegpunkt verschieben | Marker ziehen |
-| Wegpunkt löschen | Doppelklick oder Rechtsklick auf Marker |
+| Wegpunkt verschieben | Marker ziehen (auch per Finger) |
+| Wegpunkt löschen | Marker antippen/anklicken → „Wegpunkt entfernen“ (oder Doppel-/Rechtsklick) |
 | Wegpunkt in Route einfügen | Auf die Route klicken → „Wegpunkt einfügen“ |
-| **Route umleiten** | Route mit der Maus packen und auf eine andere Straße ziehen – dort entsteht ein neuer Wegpunkt. Davor und dahinter setzt die App automatisch Ankerpunkte auf die bisherige Route: Nur das Stück dazwischen wird neu geplant, der Rest bleibt exakt gleich (auch beim Verschieben von Wegpunkten und beim Umfahren) |
+| **Route umleiten** | Route mit der Maus packen (am Handy: lange auf die Route drücken) und auf eine andere Straße ziehen – dort entsteht ein neuer Wegpunkt. Davor und dahinter setzt die App automatisch Ankerpunkte auf die bisherige Route: Nur das Stück dazwischen wird neu geplant, der Rest bleibt exakt gleich (auch beim Verschieben von Wegpunkten und beim Umfahren) |
 | **Was ist das für ein Weg?** | Maus über die Route halten: Belag, Straßenart, Wegeklasse/Fahrbahn, Steigung und Länge des Stücks |
-| **Stück umfahren** | Rechtsklick auf die Route → „Dieses Stück umfahren“ (das ganze Stück gleicher Art, z. B. 850 m Schotter-Wirtschaftsweg), „Stück markieren“, „Stück immer meiden“ oder die Art (z. B. Schotter) generell meiden |
+| **Stück umfahren** | Route anklicken/antippen → „Dieses Stück umfahren“ (das ganze Stück gleicher Art, z. B. 850 m Schotter-Wirtschaftsweg) oder „Stück markieren“. Unter „Mehr …“: Abschnitt frei markieren, dauerhafte Regeln („Stück immer meiden“, eine Art wie Schotter generell meiden) und Luftbild/Street View/Mapillary/Komoot |
 | Abschnitt markieren | Auf die Route klicken → „Abschnitt ab hier markieren“ → Ende anklicken, **oder** im Höhenprofil ziehen |
-| Abschnitt **umgehen** | Sperrt den Abschnitt für die betroffene Etappe und rechnet sie neu |
+| Abschnitt **umfahren** | Sperrt den Abschnitt für die betroffene Etappe und rechnet sie neu |
 | Abschnitt **anders planen** | Setzt Wegpunkte an Anfang/Ende und gibt dem Teil eigene Einstellungen (z. B. „hier Schotter ok“) |
 | **Alternative** | Schaltet für die Etappe durch bis zu 4 BRouter-Alternativen |
 | **Immer meiden** | Speichert den Abschnitt dauerhaft als Sperre für alle Routen |
 | Luftbild | Ebenen → „Satellit“ (Esri, weltweit) oder **„Luftbild DE“** (amtliche Luftbilder 20–40 cm für RLP, NRW, Hessen, Bayern – schärfer und aktueller) wählen, oder auf die Route klicken → „Im Luftbild ansehen“ |
 | Einfärbung | Ebenen → Untergrund · Straßenart · **Steigung** · **Wind** (Gegen-/Rückenwind zur Abfahrtszeit) · Einfarbig |
 | Anstiege | Liste in der Seitenleiste (Länge, Ø- und Max-Steigung, Höhenmeter); Klick markiert den Anstieg. Im Höhenprofil rot hinterlegt |
-| Wind | Abfahrtszeit wählen → Windrichtung/-stärke, Anteil Gegen-/Rückenwind, Hinweis „heimwärts Rückenwind“ |
-| Belags-Check | Karte „Belags-Check“: Abschnitte, deren Belag in OSM fehlt oder nur geschätzt ist (Wirtschafts-, Rad- und Feldwege ohne `surface`), auf der Karte weiß gepunktet. Klick → Luftbild DE, Route ausgeblendet, Straßenfoto falls vorhanden. „✓ Passt“ blendet den Abschnitt dauerhaft aus, „⤳ Umgehen“ plant drumherum, „In OpenStreetMap eintragen“ öffnet den Editor an der Stelle |
-| Stopps unterwegs | Ebenen → „☕ Stopps unterwegs“: Cafés & Bäcker, Trinkwasser, Rad-Service, Aussichtspunkte, WC bis 300 m neben der Route – mit km-Angabe; „Als Wegpunkt einfügen“ |
-| Fotos der Strecke | Ebenen → „📷 Fotos der Strecke“: Straßenfotos entlang der Route (Panoramax; mit eigenem Mapillary-Token deutlich mehr), Großansicht mit ← → |
+| Wetter & Wind | Abfahrtszeit wählen → Windrichtung/-stärke, Anteil Gegen-/Rückenwind; darunter das Wetter entlang der Route zur jeweiligen Ankunftszeit (Temperatur, Wetterlage, Regenwahrscheinlichkeit). Ebenen → „Regenradar“ zeigt den aktuellen Niederschlag in der Umgebung |
+| Belags-Check | Karte „Belags-Check“: Abschnitte, deren Belag in OSM fehlt oder nur geschätzt ist (Wirtschafts-, Rad- und Feldwege ohne `surface`), auf der Karte weiß gepunktet. Klick → Luftbild DE, Route ausgeblendet, Straßenfoto falls vorhanden. „Passt“ blendet den Abschnitt dauerhaft aus, „Umfahren“ plant drumherum, „In OpenStreetMap eintragen“ öffnet den Editor an der Stelle |
+| Stopps unterwegs | Ebenen → „Stopps unterwegs“: Cafés & Bäcker, Trinkwasser, Rad-Service, Aussichtspunkte, WC bis 300 m neben der Route – mit km-Angabe; „Als Wegpunkt einfügen“ |
+| Fotos der Strecke | Ebenen → „Fotos der Strecke“: Straßenfotos entlang der Route (Panoramax; mit eigenem Mapillary-Token deutlich mehr), Großansicht mit ← → |
 | Route kurz ausblenden | Taste **H** oder „Route ausblenden“ – um die Straße darunter zu sehen |
 | Fotos der Strecke | Auf die Route klicken → „Google Street View“ (Blick in Fahrtrichtung), „Straßenfotos (Mapillary)“ oder „In Komoot öffnen“ (Highlights mit Fotos) – jeweils in neuem Tab |
-| Rückgängig | ↶ ↷ oben links oder **⌘/Strg+Z**, Wiederholen mit **⌘⇧Z / Strg+Y** – für Wegpunkte, Umgehen, Anders planen, Sperren, Einstellungen, Import, Leeren (letzte 50 Schritte). Nach „Leeren“ oder dem Ersetzen der Route erscheint kurz ein Hinweis mit „Rückgängig“ |
+| Rückgängig | Pfeile oben links oder **⌘/Strg+Z**, Wiederholen mit **⌘⇧Z / Strg+Y** – für Wegpunkte, Umfahren, Anders planen, Sperren, Einstellungen, Import, Leeren (letzte 50 Schritte). Nach „Leeren“ oder dem Ersetzen der Route erscheint kurz ein Hinweis mit „Rückgängig“ |
 | Export | „GPX exportieren“ bzw. ▾ für weitere Formate: **GPX** mit Abbiegehinweisen (Wegpunkte „Rechts abbiegen“ …) · **TCX** mit CoursePoints für Garmin Edge · GPX „ohne Hinweise“ |
 | Import | „GPX importieren“ oder Datei auf die Karte ziehen (z. B. Komoot-/Strava-Export). Der Track wird mit dichten Stützpunkten nachgerechnet, damit Belag und Straßenart bekannt sind, und bleibt bis zur Bearbeitung exakt. „Mit meinem Profil planen“ rechnet ihn nach deinen Einstellungen neu |
-| Meine Routen | Route benennen und speichern, später laden, umbenennen, löschen (inkl. berechneter Etappen) |
+| Meine Routen | Route benennen und speichern – direkt über „GPX exportieren“ (Punkt = ungespeicherte Änderungen) oder unter **Meine** –, später laden, umbenennen, löschen (inkl. berechneter Etappen) |
 
 Alles (Route, Einstellungen, Sperren, gespeicherte Routen, berechnete Etappen) wird im Browser gespeichert – nach dem Neuladen ist die Route ohne neue Server-Anfrage da.
 
 ## Heatmap
 
 - **Meine Heatmap** (Seitenleiste): eigene Fahrten importieren – den kompletten **Strava-Datenexport** (ZIP; Strava → Einstellungen → Mein Konto → „Konto herunterladen oder löschen“) oder einzelne **GPX/TCX/FIT**-Dateien (auch `.gz`), z. B. aus Komoot oder Garmin. Aus dem Strava-Export werden nur Radfahrten im Freien übernommen (keine Läufe, keine virtuellen Fahrten). Die Fahrten werden vereinfacht im Browser gespeichert (IndexedDB) – nichts wird hochgeladen.
-- Ebenen → **🔥 Meine Fahrten** zeigt sie als Heatmap; Einfärbung **„Neu für mich“** markiert, welche Teile der Route du noch nie gefahren bist. Die Routenübersicht zeigt den Anteil („71 % neu für dich“), Rundtour-Vorschläge ebenso – mit Sortierung **„Neue Straßen“**.
-- Ebenen → **🗺️ Öffentliche GPS-Spuren**: zu OpenStreetMap hochgeladene Tracks.
+- Ebenen → **Meine Fahrten** zeigt sie als Heatmap; Einfärbung **„Neu für mich“** markiert, welche Teile der Route du noch nie gefahren bist. Die Routenübersicht zeigt den Anteil („71 % neu für dich“), Rundtour-Vorschläge ebenso – mit Sortierung **„Neue Straßen“**.
+- Ebenen → **Öffentliche GPS-Spuren**: zu OpenStreetMap hochgeladene Tracks.
   - **Dichte (viel/wenig)**: „Bereich laden“ holt die GPS-Punkte des sichtbaren Bereichs in festen Kacheln (0,1° × 0,1°, ca. 7 × 11 km; höchstens 20 Kacheln auf einmal) und zeigt sie als Heatmap – blau = wenig, rot = viel befahren. Die Kacheln bleiben dauerhaft im Browser gespeichert (IndexedDB, auf der Karte gestrichelt umrandet): Zoomen, Verschieben und Neustarts laden nichts nach. „Bereich aktualisieren“ holt sie neu, „Alle löschen“ entfernt sie. In sehr dichten Gebieten lädt die App eine Kachel in Vierteln. Jede Spur wird gleichmäßig gezählt, egal wie oft das Gerät eine Position gespeichert hat.
   - **Nur Rad-Spuren**: Die Art wird aus dem Tempo geschätzt (Median der Bewegung unter 7,5 km/h = zu Fuß; ab 38 km/h oder 10 % der Zeit über 50 km/h = Auto). Gespeichert und gezeigt werden nur Radfahrten, Filter **Alle Rad-Spuren / Rennrad-Tempo** (Median ab 23 km/h). Spuren ohne Zeitstempel fallen weg.
   - **Bereinigt**: Spuren werden nur verbunden, wo die Punkte dicht aufeinander folgen (≤ 20 s, ≤ 120 m, < 70 km/h) – Lücken (Spur verlässt die Kachel), Pausen und GPS-Sprünge erzeugen keine Linien quer durchs Feld; Bruchstücke unter 150 m fallen weg. Pro Rasterzelle zählt jede Spur nur einmal; **„Nur mehrfach befahrene Wege“** blendet einzelne Zufallsspuren aus.
@@ -80,7 +90,7 @@ Die öffentlichen Overpass-Server sind oft ausgelastet. Antwortet keiner innerha
 
 ## Rundtour finden
 
-Im Tab **„Rundtour finden“** Startpunkt per Klick setzen (oder Ort suchen → ＋), Länge (20–200 km) und Richtung wählen (Kompass; ✱ = beliebig) und „Rundtouren vorschlagen“ klicken.
+Im Tab **„Rundtour finden“** Startpunkt per Klick setzen (oder Ort suchen → Plus), Länge (20–200 km) und Richtung wählen (Kompass; ✱ = beliebig) und „Rundtouren vorschlagen“ klicken.
 
 - Es werden mehrere Richtungen über BRouters Rundtour-Modus berechnet (`engineMode=4`, beliebig = 6 Richtungen, sonst Wunschrichtung ±35°). Weicht die Länge um mehr als 12 % ab, wird der Suchradius bis zu zweimal nachkorrigiert.
 - **Stichstraßen werden entfernt**: Fährt eine Runde ein Stück und auf derselben Straße wieder zurück (direkt gewendet oder über eine kurze Wendeschleife wie einen Kreisverkehr), wird dieses Stück herausgeschnitten. Dafür ist zusätzlich BRouters Korrektur für schlecht liegende Hilfspunkte eingeschaltet. Gemessen an 9 Testrunden: doppelt gefahrene Strecke von 16,5 % auf 1,4 %.
@@ -95,14 +105,14 @@ Oben im Routing-Profil den **Radtyp** wählen – jeder bringt passende Voreinst
 
 | Radtyp | Profile |
 |---|---|
-| 🚴 Rennrad | Rennrad · Rennrad ruhig · Schnell & direkt |
-| 🪨 Gravel | Allroad (Asphalt + feiner Schotter) · Gravel (Schotter- und Wirtschaftswege) |
-| 🚵 MTB | MTB Tour (Forstwege, Trails bis S1) · MTB Trail (möglichst viele Trails bis S2) |
-| 🚲 Trekking | Trekking (Radwege, Belag gemischt) · Alltag (direkt, Asphalt, wenig Steigung) |
+| Rennrad | Rennrad · Rennrad ruhig · Schnell & direkt |
+| Gravel | Allroad (Asphalt + feiner Schotter) · Gravel (Schotter- und Wirtschaftswege) |
+| MTB | MTB Tour (Forstwege, Trails bis S1) · MTB Trail (möglichst viele Trails bis S2) |
+| Trekking | Trekking (Radwege, Belag gemischt) · Alltag (direkt, Asphalt, wenig Steigung) |
 
 **Trails bis Schwierigkeit** (S0–S3) sperrt schwerere Wege nach der MTB-Skala in OpenStreetMap (`mtb:scale`; fehlt sie, zählt die Wanderskala `sac_scale`).
 
-Jede Belags- und Straßenkategorie hat vier Stufen: **★ Bevorzugen · ○ Neutral · ↓ Meiden · ✕ Sperren**. Daraus wird ein BRouter-Profil erzeugt (`src/domain/profile.ts`): Kosten = Straßenfaktor × Belagsfaktor × Fahrbahnqualität + Verkehrs-/Tempo-Zuschläge.
+Jede Belags- und Straßenkategorie hat vier Stufen: **Bevorzugen (Stern) · Neutral (Kreis) · Meiden (Pfeil) · Sperren (Kreuz)**. Daraus wird ein BRouter-Profil erzeugt (`src/domain/profile.ts`): Kosten = Straßenfaktor × Belagsfaktor × Fahrbahnqualität + Verkehrs-/Tempo-Zuschläge.
 
 Fehlt in OSM das `surface`-Tag, wird abgeleitet: Straßen (inkl. Radwege) → Asphalt, `tracktype=grade1` → Asphalt, `grade2` → feiner Schotter usw., sonst „Unbekannt“.
 
@@ -149,10 +159,10 @@ git clone https://github.com/T4s3rF4c3/veloterra.git && cd veloterra
 ```
 
 ```bash
-APPDATA=/mnt/user/appdata/veloterra docker compose up -d
+APPDATA=/mnt/user/appdata/veloterra VELOTERRA_ADMIN_PASSWORD='ein-langes-passwort' docker compose up -d
 ```
 
-Die Datei `docker-compose.yml` startet beide Container; Veloterra erreicht BRouter intern unter `http://brouter:17777`. Mit `build:` lässt sich auch lokal bauen (`docker compose up -d --build`), falls keine fertigen Images genutzt werden sollen.
+Die Datei `docker-compose.yml` startet drei Container; Veloterra erreicht BRouter intern unter `http://brouter:17777` und den Veloterra-Server unter `http://veloterra-api:8787`. Mit `build:` lässt sich auch lokal bauen (`docker compose up -d --build`), falls keine fertigen Images genutzt werden sollen.
 
 ### Einstellungen der Container
 
@@ -162,6 +172,18 @@ Die Datei `docker-compose.yml` startet beide Container; Veloterra erreicht BRout
 |---|---|
 | `BROUTER_UPSTREAM` | Interne Adresse eines eigenen BRouter-Servers. nginx leitet `/brouter` dorthin weiter – der Browser braucht keinen direkten Zugriff, keine CORS-Probleme |
 | `BROUTER_URL` | Alternativ: URL, die der Browser direkt anspricht. Leer = brouter.de |
+| `API_UPSTREAM` | Interne Adresse des Veloterra-Servers. nginx leitet `/api` dorthin weiter. Leer = kein Admin-Bereich, die App läuft nur im Browser |
+
+**Veloterra-API** (Admin-Bereich, optional)
+
+| Variable | Standard | Bedeutung |
+|---|---|---|
+| `ADMIN_PASSWORD` | – | Passwort für den Admin-Bereich. Ohne Passwort ist die Anmeldung gesperrt |
+| `DATA_DIR` | `/data` | Einstellungen (`config.json`) und GPS-Kacheln (`traces/`); als Volume nach appdata einbinden |
+
+Im Admin-Bereich (Zahnrad, nach Anmeldung) gelten Mapillary-Token, BRouter- und Overpass-Server **für alle Besucher**. Unter **„GPS-Spuren für alle“** lädt der Server die öffentlichen GPS-Spuren einer Region – z. B. ganz Rheinland-Pfalz (~480 Kacheln, ca. 1–1,5 Std.) – einmal bei OpenStreetMap, nacheinander und mit Pause, um die Schnittstelle zu schonen. Der Ladevorgang läuft auch weiter, wenn der Browser geschlossen ist. Danach bekommen alle Besucher die Kacheln direkt vom Server; nur was dort fehlt, lädt der Browser noch selbst.
+
+Anmeldung: Sitzungs-Cookie (30 Tage, HttpOnly, SameSite=Strict), höchstens 8 Fehlversuche je Adresse in 15 Minuten. Hinter einem HTTPS-Reverse-Proxy (`X-Forwarded-Proto: https`) wird das Cookie zusätzlich als `Secure` markiert.
 
 **Veloterra-BRouter**
 
@@ -181,8 +203,16 @@ Mit eigenem Server stellt die App bis zu 4 Anfragen gleichzeitig – Rundtour-Su
 VITE_BROUTER_URL=http://localhost:17777/brouter npm run dev
 ```
 
+### Lokal entwickeln mit Veloterra-Server (Admin)
+
+```bash
+ADMIN_PASSWORD=test npm run dev:server   # Port 8787, Daten in ./data-api
+npm run dev                              # leitet /api dorthin weiter
+```
+
 ## Skripte
 
 - `npm test` – Unit-Tests (Vitest)
-- `npm run build` – Produktions-Build
+- `npm run build` – Produktions-Build (Web-App und Veloterra-Server)
+- `npm run build:server` – nur den Veloterra-Server bündeln (`dist-server/server.mjs`)
 - `npx tsx scripts/dump-profile.ts road` – generiertes Profil eines Presets ausgeben
