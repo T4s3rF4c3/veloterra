@@ -1,11 +1,65 @@
 import { useRef, useState } from 'react';
 import { clearHeat, importActivities, useHeat, type ImportResult } from '../api/heatStore';
+import { useSite } from '../api/site';
+import { PACE_BINS } from '../domain/pace';
+import { BIKE_TYPES } from '../domain/settings';
+import { useAvailablePace } from '../hooks/usePace';
 import { useStore } from '../store';
 import { Panel } from './Panel';
 import { Icon } from './Icon';
 
+/** Persönliches Tempo je Steigung – daraus wird die Fahrzeit geschätzt. */
+function PaceInfo({ tracks }: { tracks: number }) {
+  const pace = useAvailablePace();
+  const enabled = useStore((s) => s.usePersonalPace);
+  const bike = useStore((s) => s.settings.bike ?? 'road');
+  const bikeLabel = BIKE_TYPES.find((b) => b.key === bike)?.label ?? 'Rad';
+  if (!tracks) return null;
+  if (!pace)
+    return (
+      <p className="muted small pace-note">
+        <b>Dein Tempo:</b> Dafür braucht es Fahrten mit Zeit und Höhe (Strava-Export, Garmin-FIT, GPX). Schon
+        importierte Fahrten einfach noch einmal importieren – das Tempo wird ergänzt.
+      </p>
+    );
+  return (
+    <div className="pace">
+      <div className="pace-head">
+        <b>Dein Tempo</b>
+        <small className="muted">
+          {pace.rides} Fahrten{pace.matched ? ` · ${bikeLabel}` : ''} · {Math.round(pace.km).toLocaleString('de-DE')} km
+        </small>
+      </div>
+      <ul className="pace-bins">
+        {PACE_BINS.map((b) => (
+          <li
+            key={b.key}
+            className={pace.measured[b.key] ? '' : 'guess'}
+            title={pace.measured[b.key] ? undefined : 'zu wenig eigene Daten – aus deinem Flach-Tempo abgeleitet'}
+          >
+            <small>{b.label}</small>
+            <b>
+              {Math.round(pace.speeds[b.key])}
+              <span>km/h</span>
+            </b>
+          </li>
+        ))}
+      </ul>
+      <label className="toggle">
+        <input
+          type="checkbox"
+          checked={enabled}
+          onChange={(e) => useStore.getState().setUsePersonalPace(e.target.checked)}
+        />
+        Fahrzeit nach meinem Tempo berechnen
+      </label>
+    </div>
+  );
+}
+
 /** Eigene Fahrten importieren (Strava-Export, GPX/TCX/FIT) für die persönliche Heatmap. */
 export function HeatPanel() {
+  const user = useSite((s) => s.user);
   const tracks = useHeat((s) => s.tracks.length);
   const km = useHeat((s) => s.km);
   const busy = useHeat((s) => s.busy);
@@ -41,7 +95,8 @@ export function HeatPanel() {
     >
       <p className="muted small">
         Deine gefahrenen Strecken als Kartenebene – und bei Routen und Rundtouren der Anteil, den du noch nie gefahren
-        bist. Alles bleibt in diesem Browser.
+        bist. Aus Zeit und Höhe der Fahrten lernt Veloterra dein Tempo.{' '}
+        {user ? 'Wird mit deinem Konto synchronisiert.' : 'Alles bleibt in diesem Browser.'}
       </p>
       {tracks > 0 && (
         <label className="toggle">
@@ -49,6 +104,7 @@ export function HeatPanel() {
           Auf der Karte zeigen
         </label>
       )}
+      <PaceInfo tracks={tracks} />
       {busy ? (
         <div className="loop-progress">
           <div className="progress">
@@ -67,7 +123,14 @@ export function HeatPanel() {
             <button
               className="ghost"
               onClick={() => {
-                if (confirm(`Alle ${tracks} importierten Fahrten aus diesem Browser löschen?`)) void clearHeat();
+                if (
+                  confirm(
+                    user
+                      ? `Alle ${tracks} importierten Fahrten löschen – auch in deinem Konto und auf deinen anderen Geräten?`
+                      : `Alle ${tracks} importierten Fahrten aus diesem Browser löschen?`,
+                  )
+                )
+                  void clearHeat().catch((e: Error) => setError(`Löschen fehlgeschlagen: ${e.message}`));
               }}
             >
               Löschen

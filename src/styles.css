@@ -3016,10 +3016,30 @@ button.link:hover:not(:disabled) {
   box-shadow: var(--shadow);
   font-size: 12px;
   color: var(--text);
-  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+  cursor: help;
 }
 .radar-chip .icon {
   color: var(--accent);
+}
+/* folgt gerade der Maus über dem Streckenband */
+.radar-chip.live {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+.rain-scale {
+  display: inline-flex;
+  margin-left: 2px;
+}
+.rain-scale i {
+  width: 8px;
+  height: 8px;
+}
+.rain-scale i:first-child {
+  border-radius: 2px 0 0 2px;
+}
+.rain-scale i:last-child {
+  border-radius: 0 2px 2px 0;
 }
 
 /* ===== Knöpfe: Feinschliff ===== */
@@ -3096,4 +3116,288 @@ button.danger {
 }
 button.danger:hover:not(:disabled) {
   background: var(--danger-soft);
+}
+
+/* Konto: Anmeldung, Sync-Status, Konten verwalten */
+.account-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.account-form .cap {
+  margin-top: 4px;
+}
+.account-form > button {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+.account-form.inset {
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.account-form-title {
+  font-size: 13.5px;
+}
+input.field {
+  font: inherit;
+  font-size: 13.5px;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: var(--pill);
+  background: var(--sunk);
+  color: var(--text);
+}
+input.field:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.field-hint {
+  font-size: 12px;
+  color: var(--muted);
+}
+.field-hint.warn {
+  color: var(--warn-ink);
+}
+.account-card {
+  margin-bottom: 12px;
+}
+.account-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.account-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+.account-name {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.account-name b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.account-name small {
+  font-size: 12px;
+  color: var(--muted);
+}
+.role-chip {
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: var(--pill);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 500;
+}
+.list.users li > span {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Persönliches Tempo */
+.pace {
+  margin: 10px 0 4px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--sunk);
+}
+.pace-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13.5px;
+}
+.pace-head small {
+  font-size: 12px;
+}
+.pace-bins {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 8px;
+  margin: 10px 0 8px;
+  padding: 0;
+  list-style: none;
+}
+.pace-bins li {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.pace-bins small {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.pace-bins b {
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+.pace-bins b span {
+  margin-left: 3px;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.pace-bins li.guess b {
+  color: var(--muted);
+  font-weight: 500;
+}
+.pace-note {
+  margin: 10px 0 4px;
+}
+
+/* Teilen: Knopf neben dem Export, Dialog mit QR-Code */
+.footer-actions {
+  display: flex;
+  gap: 6px;
+}
+.footer-actions .export-menu {
+  flex: 1;
+  min-width: 0;
+}
+.share-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 42px;
+}
+.share-dialog {
+  width: min(380px, calc(100vw - 32px));
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+.share-dialog::backdrop {
+  background: var(--scrim);
+}
+.share-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px 18px;
+}
+.share-body > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.share-body .muted.small {
+  margin: 0;
+}
+.share-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.share-head h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+.share-qr {
+  align-self: center;
+  width: min(240px, 100%);
+  padding: 8px;
+  border-radius: var(--radius);
+  /* QR-Codes brauchen hellen Grund, damit Kameras sie lesen */
+  background: #fff;
+  color: #000;
+}
+.share-qr svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* ohne Netz: Hinweis oben auf der Karte */
+.offline-chip {
+  position: absolute;
+  z-index: 6;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--pill);
+  background: var(--warn-soft);
+  color: var(--warn-ink);
+  border: 1px solid var(--warn-line);
+  font-size: 13px;
+  box-shadow: var(--shadow);
+}
+.install-card {
+  margin-top: 12px;
+}
+
+/* Login/Konto in der Leiste: Anfangsbuchstabe statt Symbol */
+.rail-avatar {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.area-section {
+  margin: 20px 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.account-avatar.small {
+  width: 28px;
+  height: 28px;
+  font-size: 13px;
+}
+/* Hinweis unter „Meine“: Konto/Sync, führt in den Login-Bereich */
+.sync-hint {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--soft);
+  text-align: left;
+}
+.sync-hint > span:not(.account-avatar) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.sync-hint small {
+  font-size: 12px;
+  color: var(--muted);
+}
+.sync-hint > svg:last-child {
+  color: var(--muted);
 }

@@ -21,7 +21,8 @@ location /api/ {
     proxy_set_header X-Real-IP \$remote_addr;
     proxy_set_header X-Forwarded-Proto \$http_x_forwarded_proto;
     proxy_read_timeout 60s;
-    client_max_body_size 64k;
+    # Sync von Routen und Heatmap braucht größere Anfragen
+    client_max_body_size 16m;
 }
 NGINX
   echo "veloterra: Admin und GPS-Spuren über /api an ${api}"

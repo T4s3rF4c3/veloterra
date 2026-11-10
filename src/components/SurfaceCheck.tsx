@@ -44,14 +44,19 @@ function SectionPhoto({ line }: { line: LngLat[] }) {
   );
 }
 
-/** Prüfen eines Abschnitts: Luftbild, Route ausblenden, hinzoomen. */
+/** Etwas Route davor und danach mit ins Bild nehmen (Meter) */
+const CONTEXT_M = 250;
+
+/**
+ * Prüfen eines Abschnitts: Luftbild, hinzoomen, Abschnitt auf der Karte gelb
+ * hervorheben. Die Route bleibt sichtbar, damit klar ist, welcher Teil gemeint ist.
+ */
 function useCheck(route: CombinedRoute, fit: (c: LngLat[], maxZoom?: number) => void) {
   const active = useStore((s) => s.activeCheck);
   const st = useStore.getState;
   const close = () => {
     st().setActiveCheck(null);
     st().setSelection(null);
-    st().setHideRoute(false);
   };
   const show = (s: UncertainSection) => {
     if (active === s.id) return close();
@@ -59,15 +64,15 @@ function useCheck(route: CombinedRoute, fit: (c: LngLat[], maxZoom?: number) => 
     if (b !== 'satellite' && b !== 'aerial') st().setBasemap('aerial');
     st().setActiveCheck(s.id);
     st().setSelection({ start: s.start, end: s.end });
-    st().setHideRoute(true);
-    fit(sliceLine(route.coords, route.dist, s.start, s.end), 17);
+    const total = route.dist[route.dist.length - 1];
+    fit(sliceLine(route.coords, route.dist, Math.max(0, s.start - CONTEXT_M), Math.min(total, s.end + CONTEXT_M)), 17);
   };
   return { active, close, show };
 }
 
 /**
  * Belags-Check: Abschnitte, deren Belag in OSM fehlt oder nur geschätzt ist.
- * Ein Klick zeigt die Stelle im Luftbild (Route ausgeblendet) mit Foto.
+ * Ein Klick zeigt die Stelle im Luftbild – gelb hervorgehoben auf der Route – mit Foto.
  */
 export function SurfaceCheck({
   route,
@@ -117,7 +122,7 @@ export function SurfaceCheck({
       ) : (
         <p className="muted small">
           {open.length} {open.length === 1 ? 'Abschnitt' : 'Abschnitte'} ({formatKm(total)}) mit unbekanntem oder nur
-          geschätztem Belag – auf der Karte gepunktet. Anklicken zum Prüfen im Luftbild.
+          geschätztem Belag – auf der Karte gepunktet. Anklicken zeigt den Abschnitt gelb im Luftbild.
         </p>
       )}
       <ul className="list checks">
@@ -175,7 +180,7 @@ export function SurfaceCheck({
                     >
                       In OpenStreetMap eintragen ↗
                     </a>
-                    <span className="muted small">Taste H: Route ein-/ausblenden</span>
+                    <span className="muted small">Taste H blendet die Route aus, um die Straße zu sehen</span>
                   </div>
                 </div>
               )}

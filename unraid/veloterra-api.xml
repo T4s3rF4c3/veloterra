@@ -9,9 +9,9 @@
   <Privileged>false</Privileged>
   <Support>https://github.com/T4s3rF4c3/veloterra/issues</Support>
   <Project>https://github.com/T4s3rF4c3/veloterra</Project>
-  <Overview>Optionaler Server für Veloterra: Admin-Bereich mit Anmeldung, Einstellungen für alle Besucher (Mapillary-Token, BRouter- und Overpass-Server) und öffentliche GPS-Spuren einer Region (z. B. Rheinland-Pfalz), die einmal geladen und dann allen Besuchern bereitgestellt werden.&#xD;
+  <Overview>Optionaler Server für Veloterra: Benutzerkonten, mit denen gespeicherte Routen, die eigene Heatmap und das persönliche Tempo auf allen Geräten synchronisiert werden; kurze Teilen-Links; Admin-Bereich mit Kontenverwaltung, Einstellungen für alle Besucher (Mapillary-Token, BRouter- und Overpass-Server) und öffentliche GPS-Spuren einer Region (z. B. Rheinland-Pfalz), die einmal geladen und dann allen Besuchern bereitgestellt werden.&#xD;
 &#xD;
-In Veloterra danach API_UPSTREAM auf http://[IP-des-Servers]:8787 setzen. Ohne Admin-Passwort ist die Anmeldung gesperrt.</Overview>
+In Veloterra danach API_UPSTREAM auf http://[IP-des-Servers]:8787 setzen. Anmelden über „Login“ unten in der Leiste mit dem Benutzernamen admin und dem Admin-Passwort; weitere Konten legt der Admin unter Konto → Verwaltung → Konten an.</Overview>
   <Category>Tools: Other:</Category>
   <WebUI/>
   <TemplateURL>https://raw.githubusercontent.com/T4s3rF4c3/veloterra/main/unraid/veloterra-api.xml</TemplateURL>
@@ -23,6 +23,7 @@ In Veloterra danach API_UPSTREAM auf http://[IP-des-Servers]:8787 setzen. Ohne A
   <DonateLink/>
   <Requires/>
   <Config Name="API-Port" Target="8787" Default="8787" Mode="tcp" Description="Port des Veloterra-Servers (Veloterra leitet /api hierher weiter)" Type="Port" Display="always" Required="true" Mask="false">8787</Config>
-  <Config Name="Admin-Passwort" Target="ADMIN_PASSWORD" Default="" Mode="" Description="Passwort für den Admin-Bereich – lang und eindeutig wählen. Leer = Anmeldung gesperrt" Type="Variable" Display="always" Required="true" Mask="true"/>
-  <Config Name="Daten" Target="/data" Default="/mnt/user/appdata/veloterra-api" Mode="rw" Description="Einstellungen (config.json) und geladene GPS-Kacheln (Rheinland-Pfalz ca. 20–40 MB)" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/veloterra-api</Config>
+  <Config Name="Admin-Passwort" Target="ADMIN_PASSWORD" Default="" Mode="" Description="Passwort des Admin-Kontos – lang und eindeutig wählen. Leer = kein Admin-Konto" Type="Variable" Display="always" Required="true" Mask="true"/>
+  <Config Name="Admin-Benutzername" Target="ADMIN_USER" Default="admin" Mode="" Description="Benutzername des Admin-Kontos" Type="Variable" Display="advanced" Required="false" Mask="false">admin</Config>
+  <Config Name="Daten" Target="/data" Default="/mnt/user/appdata/veloterra-api" Mode="rw" Description="Einstellungen, Konten mit ihren Routen und Fahrten sowie geladene GPS-Kacheln (Rheinland-Pfalz ca. 20–40 MB)" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/veloterra-api</Config>
 </Container>

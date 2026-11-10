@@ -1,0 +1,17 @@
+{
+  "name": "Veloterra – Routen nach Belag & Straßenart",
+  "short_name": "Veloterra",
+  "description": "Routenplaner für Rennrad, Gravel, MTB und Trekking: nach Belag und Straßenart planen, Rundtouren und Ziele finden.",
+  "lang": "de",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#18191b",
+  "theme_color": "#202124",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

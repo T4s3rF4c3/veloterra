@@ -1,4 +1,5 @@
 import type { LngLat } from './geo';
+import type { ActivityTrack } from './pace';
 
 /**
  * Einlesen eigener Aktivitäten für die persönliche Heatmap: GPX, TCX und FIT
@@ -54,37 +55,69 @@ interface FitDef {
   devSize: number;
 }
 
+export function parseFitPoints(buf: Uint8Array): LngLat[] {
+  return parseFitTrack(buf).coords;
+}
+
+/** FIT-Zeitstempel: Sekunden seit 31.12.1989 */
+const FIT_EPOCH = 631065600;
+
 /**
- * Minimaler FIT-Leser: nur die Positionen aus den „record“-Nachrichten.
+ * Minimaler FIT-Leser: Position, Zeit und Höhe aus den „record“-Nachrichten.
  * FIT besteht aus Definitionen (Aufbau einer Nachricht) und Datensätzen.
  */
-export function parseFitPoints(buf: Uint8Array): LngLat[] {
-  if (buf.length < 14) return [];
+export function parseFitTrack(buf: Uint8Array): ActivityTrack {
+  const track: ActivityTrack = { coords: [], ele: [], time: [] };
+  if (buf.length < 14) return track;
   const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
   const headerSize = buf[0];
   const sig = String.fromCharCode(buf[8], buf[9], buf[10], buf[11]);
-  if (sig !== '.FIT') return [];
+  if (sig !== '.FIT') return track;
   const end = Math.min(buf.length, headerSize + dv.getUint32(4, true));
   const defs: (FitDef | undefined)[] = [];
-  const out: LngLat[] = [];
   let pos = headerSize;
+  let lastTs = NaN;
 
-  const readData = (def: FitDef) => {
+  const readData = (def: FitDef, compressedOffset: number | null) => {
     let lat = NaN;
     let lon = NaN;
+    let alt = NaN;
+    let ts = NaN;
     for (const f of def.fields) {
       if (pos + f.size > end) return false;
-      if (def.global === FIT_RECORD && f.size === 4 && (f.num === 0 || f.num === 1)) {
-        const v = dv.getInt32(pos, def.little);
-        if (v !== INVALID_SINT32) {
-          if (f.num === 0) lat = v * SEMICIRCLE;
-          else lon = v * SEMICIRCLE;
+      if (def.global === FIT_RECORD) {
+        if (f.size === 4 && (f.num === 0 || f.num === 1)) {
+          const v = dv.getInt32(pos, def.little);
+          if (v !== INVALID_SINT32) {
+            if (f.num === 0) lat = v * SEMICIRCLE;
+            else lon = v * SEMICIRCLE;
+          }
+        } else if (f.num === 253 && f.size === 4) {
+          const v = dv.getUint32(pos, def.little);
+          if (v !== 0xffffffff) ts = v;
+        } else if (f.num === 78 && f.size === 4) {
+          const v = dv.getUint32(pos, def.little);
+          if (v !== 0xffffffff) alt = v / 5 - 500;
+        } else if (f.num === 2 && f.size === 2 && !Number.isFinite(alt)) {
+          const v = dv.getUint16(pos, def.little);
+          if (v !== 0xffff) alt = v / 5 - 500;
         }
       }
       pos += f.size;
     }
     pos += def.devSize;
-    if (def.global === FIT_RECORD && valid(lon, lat)) out.push([lon, lat]);
+    if (Number.isFinite(ts)) lastTs = ts;
+    else if (compressedOffset !== null && Number.isFinite(lastTs)) {
+      // komprimierter Zeitstempel: nur die unteren 5 Bit
+      const base = lastTs - (lastTs % 32);
+      ts = base + compressedOffset + (compressedOffset >= lastTs % 32 ? 0 : 32);
+      lastTs = ts;
+    }
+    if (def.global === FIT_RECORD && valid(lon, lat)) {
+      track.coords.push([lon, lat]);
+      track.ele.push(alt);
+      track.time.push(Number.isFinite(ts) ? (ts + FIT_EPOCH) * 1000 : NaN);
+    }
     return true;
   };
 
@@ -93,7 +126,7 @@ export function parseFitPoints(buf: Uint8Array): LngLat[] {
     if (h & 0x80) {
       // Datensatz mit komprimiertem Zeitstempel
       const def = defs[(h >> 5) & 0x03];
-      if (!def || !readData(def)) break;
+      if (!def || !readData(def, h & 0x1f)) break;
     } else if (h & 0x40) {
       // Definition
       const local = h & 0x0f;
@@ -120,10 +153,10 @@ export function parseFitPoints(buf: Uint8Array): LngLat[] {
       defs[local] = { global, little, fields, devSize };
     } else {
       const def = defs[h & 0x0f];
-      if (!def || !readData(def)) break;
+      if (!def || !readData(def, null)) break;
     }
   }
-  return out;
+  return track;
 }
 
 /** Einfaches CSV (Strava activities.csv) – berücksichtigt Anführungszeichen. */
@@ -195,4 +228,54 @@ export function parseActivity(format: ActivityFormat, data: Uint8Array): LngLat[
   if (format === 'fit') return parseFitPoints(data);
   const text = new TextDecoder().decode(data);
   return format === 'gpx' ? parseGpxPoints(text) : parseTcxPoints(text);
+}
+
+const tagValue = (body: string, tag: string) => body.match(new RegExp(`<(?:\\w+:)?${tag}>\\s*([^<]+?)\\s*</`))?.[1];
+
+/** GPX mit Höhe und Zeit je Punkt */
+export function parseGpxTrack(text: string): ActivityTrack {
+  const track: ActivityTrack = { coords: [], ele: [], time: [] };
+  for (const tag of ['trkpt', 'rtept']) {
+    const re = new RegExp(`<${tag}\\b([^>]*?)(?:/>|>([\\s\\S]*?)</${tag}>)`, 'g');
+    for (const m of text.matchAll(re)) {
+      const attrs = m[1];
+      const lat = num(attrs.match(/\blat\s*=\s*["']([^"']+)["']/)?.[1]);
+      const lon = num(attrs.match(/\blon\s*=\s*["']([^"']+)["']/)?.[1]);
+      if (!valid(lon, lat)) continue;
+      const body = m[2] ?? '';
+      track.coords.push([lon, lat]);
+      track.ele.push(num(tagValue(body, 'ele')));
+      const t = tagValue(body, 'time');
+      track.time.push(t ? Date.parse(t) : NaN);
+    }
+    if (track.coords.length) break;
+  }
+  return track;
+}
+
+/** TCX mit Höhe und Zeit je Trackpoint */
+export function parseTcxTrack(text: string): ActivityTrack {
+  const track: ActivityTrack = { coords: [], ele: [], time: [] };
+  for (const m of text.matchAll(/<Trackpoint>([\s\S]*?)<\/Trackpoint>/g)) {
+    const body = m[1];
+    const lat = num(tagValue(body, 'LatitudeDegrees'));
+    const lon = num(tagValue(body, 'LongitudeDegrees'));
+    if (!valid(lon, lat)) continue;
+    track.coords.push([lon, lat]);
+    track.ele.push(num(tagValue(body, 'AltitudeMeters')));
+    const t = tagValue(body, 'Time');
+    track.time.push(t ? Date.parse(t) : NaN);
+  }
+  if (!track.coords.length) {
+    const coords = parseTcxPoints(text);
+    return { coords, ele: coords.map(() => NaN), time: coords.map(() => NaN) };
+  }
+  return track;
+}
+
+/** Fahrt mit Höhe und Zeit (für Heatmap und persönliches Tempo) */
+export function parseActivityTrack(format: ActivityFormat, data: Uint8Array): ActivityTrack {
+  if (format === 'fit') return parseFitTrack(data);
+  const text = new TextDecoder().decode(data);
+  return format === 'gpx' ? parseGpxTrack(text) : parseTcxTrack(text);
 }

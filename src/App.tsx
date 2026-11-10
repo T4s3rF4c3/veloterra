@@ -11,17 +11,27 @@ import { Sidebar } from './components/Sidebar';
 import { sliceLine, type LngLat } from './domain/geo';
 import { uncertainSections } from './domain/surfaceCheck';
 import { useHeat } from './api/heatStore';
+import { openSharedFromHash } from './api/share';
+import { estimateTime } from './domain/pace';
 import { useColoring } from './hooks/useColoring';
+import { usePace } from './hooks/usePace';
 import { useRouting } from './hooks/useRouting';
 import { useStops } from './hooks/useStops';
 import { departureTime, useWind } from './hooks/useWind';
 import { redo, undo, useHistory } from './history';
+import { usePwa } from './pwa';
 import { useStore } from './store';
 import { Icon } from './components/Icon';
 import { SURFACE_CLASS, type SurfaceCat } from './domain/settings';
 
 export default function App() {
-  const { route, stale, legs, loading, errors, retry } = useRouting();
+  const { route: planned, stale, legs, loading, errors, retry } = useRouting();
+  // Fahrzeit nach dem eigenen Tempo (wirkt auch auf Wind, Wetter und GPX-Zeiten)
+  const pace = usePace();
+  const route = useMemo(
+    () => (planned && pace ? { ...planned, time: estimateTime(planned.dist, planned.ele, pace) } : planned),
+    [planned, pace],
+  );
   const selection = useStore((s) => s.selection);
   const colorMode = useStore((s) => s.colorMode);
   const editingLeg = useStore((s) => s.editingLeg);
@@ -64,6 +74,26 @@ export default function App() {
         : [],
     [route, sections, checkedSurfaces],
   );
+  const online = usePwa((s) => s.online);
+  const [shareError, setShareError] = useState<string | null>(null);
+  // geteilte Route aus dem Link übernehmen (beim Start und bei neuem Link im selben Tab)
+  useEffect(() => {
+    const open = () =>
+      void openSharedFromHash().then((r) => {
+        if (!r) return;
+        if ('error' in r) setShareError(r.error);
+        // Karte ist evtl. noch nicht bereit – kurz warten
+        else setTimeout(() => mapApi.current?.fit(r.coords), 300);
+      });
+    open();
+    window.addEventListener('hashchange', open);
+    return () => window.removeEventListener('hashchange', open);
+  }, []);
+  const activeCheck = useStore((s) => s.activeCheck);
+  const checkLine = useMemo(() => {
+    const s = route && sections.find((x) => x.id === activeCheck);
+    return route && s ? sliceLine(route.coords, route.dist, s.start, s.end) : null;
+  }, [route, sections, activeCheck]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -121,6 +151,7 @@ export default function App() {
             stale={stale}
             pieces={coloring.pieces}
             uncertain={mode === 'route' ? uncertainLines : []}
+            checkLine={mode === 'route' ? checkLine : null}
             onMapApi={(api) => (mapApi.current = api)}
           />
           <button
@@ -183,6 +214,19 @@ export default function App() {
           </div>
           {editingLeg && <LegEditor />}
           <PoiCard route={route} fit={(c) => mapApi.current?.fit(c)} />
+          {!online && (
+            <div className="offline-chip" role="status">
+              <Icon name="cloud" size={15} /> Offline – zuletzt geplante Route und gespeicherte Karte
+            </div>
+          )}
+          {shareError && (
+            <div className="undo-toast" role="alert">
+              <span>{shareError}</span>
+              <button className="ghost" onClick={() => setShareError(null)} aria-label="Schließen">
+                <Icon name="x" size={14} />
+              </button>
+            </div>
+          )}
           {notice && (
             <div className="undo-toast" role="status">
               <span>{notice}</span>

@@ -1,5 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { cumulativeDistances, formatDuration, formatKm } from '../domain/geo';
+import { estimateTime } from '../domain/pace';
+import { usePace } from '../hooks/usePace';
 import {
   DIRECTIONS,
   SUGGESTION_COLORS,
@@ -47,6 +49,7 @@ export function LoopPanel({
   const suggestions = useStore((s) => s.suggestions);
   const active = useStore((s) => s.activeSuggestion);
   const settings = useStore((s) => s.settings);
+  const pace = usePace();
   const heat = useHeat((s) => s.index);
   // bei Gravel/MTB interessiert der Anteil unbefestigt, sonst der Asphalt
   const offroad = settings.bike === 'gravel' || settings.bike === 'mtb';
@@ -196,7 +199,11 @@ export function LoopPanel({
                 <div className="sugg-head">
                   <b>{formatKm(s.stats.length)}</b>
                   <span>{Math.round(s.stats.ascend)} hm</span>
-                  <span>{formatDuration(s.leg.time)}</span>
+                  <span>
+                    {formatDuration(
+                      pace ? estimateTime(cumulativeDistances(s.leg.coords), s.leg.ele, pace) : s.leg.time,
+                    )}
+                  </span>
                   <ScoreBadge score={s.stats.score} />
                 </div>
                 <div className="sugg-tags">

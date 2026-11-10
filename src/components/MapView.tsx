@@ -35,6 +35,62 @@ import { useSite } from '../api/site';
 import { useStore, type Basemap, type Suggestion } from '../store';
 import { SUGGESTION_COLORS } from '../domain/roundtrip';
 import { Icon } from './Icon';
+import {
+  RAIN_MAX_ZOOM,
+  RAIN_SCALE,
+  RAIN_TILE_SIZE,
+  framesAlong,
+  prefetchRain,
+  rainCoverage,
+  rainFrameAt,
+  rainTiles,
+  registerRainProtocol,
+  visibleRainTiles,
+  type RainCoverage,
+  type RainFrame,
+} from '../api/rain';
+
+// Regen-Kacheln vom DWD, im Browser umgefärbt
+registerRainProtocol();
+
+const clockOf = (t: number) => new Date(t).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+/** „Mi 14:00“, wenn nicht heute */
+function whenOf(t: number) {
+  const d = new Date(t);
+  const today = new Date().toDateString() === d.toDateString();
+  return `${today ? '' : `${d.toLocaleDateString('de-DE', { weekday: 'short' })} `}${clockOf(t)}`;
+}
+
+/** Hinweis oben rechts: was zeigt die Regenebene gerade? */
+function RainChip({ rain }: { rain: { frame: RainFrame | null; at: number; km: number | null } }) {
+  const f = rain.frame;
+  const where = rain.km !== null ? `km ${Math.round(rain.km / 1000)} · ` : '';
+  const text = !f
+    ? `Kein Regenbild für ${whenOf(rain.at)}`
+    : f.kind === 'radar'
+      ? `${f.observed ? 'Regenradar' : 'Radar-Vorhersage'} · ${whenOf(f.time)}`
+      : `Regen-Vorhersage · ${whenOf(f.time - 3600_000)}–${clockOf(f.time)}`;
+  return (
+    <div
+      className={`radar-chip ${rain.km !== null ? 'live' : ''}`}
+      title={
+        'Niederschlag vom Deutschen Wetterdienst: Radar (gemessen und ca. 2 Stunden Vorhersage), danach ' +
+        'stündliche Vorhersage des Modells ICON-EU. Über dem Streckenband zeigt die Karte den Regen zur ' +
+        'Ankunftszeit an der Stelle.'
+      }
+      role="status"
+    >
+      <Icon name="radar" size={14} />
+      {where}
+      {text}
+      <span className="rain-scale" aria-hidden>
+        {RAIN_SCALE.map((s) => (
+          <i key={s.min} style={{ background: `rgb(${s.rgba.slice(0, 3).join(' ')})` }} title={s.label} />
+        ))}
+      </span>
+    </div>
+  );
+}
 
 const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services';
 
@@ -165,6 +221,8 @@ interface Props {
   pieces: Piece[];
   /** Abschnitte mit unsicherem Belag (gepunktet über der Route) */
   uncertain: LngLat[][];
+  /** gerade im Belags-Check geprüfter Abschnitt (hervorgehoben über der Route) */
+  checkLine?: LngLat[] | null;
   onMapApi?: (api: MapApi) => void;
 }
 
@@ -329,6 +387,7 @@ function addLayers(map: MlMap) {
     'uncertain',
     'netroute',
     'drag',
+    'check',
   ].forEach(src);
 
   // gewählte Radroute
@@ -403,6 +462,21 @@ function addLayers(map: MlMap) {
     source: 'uncertain',
     paint: { 'line-color': '#ffffff', 'line-width': 3.5, 'line-dasharray': [0.1, 1.8], 'line-opacity': 0.95 },
     layout: { 'line-cap': 'round' },
+  });
+  // Belags-Check: geprüfter Abschnitt gelb über der Route, damit klar ist, welcher gemeint ist
+  map.addLayer({
+    id: 'check-casing',
+    type: 'line',
+    source: 'check',
+    paint: { 'line-color': '#202124', 'line-width': 11, 'line-opacity': 0.85 },
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+  });
+  map.addLayer({
+    id: 'check',
+    type: 'line',
+    source: 'check',
+    paint: { 'line-color': '#fdd663', 'line-width': 6 },
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
   });
   map.addLayer({
     id: 'overrides',
@@ -512,7 +586,7 @@ function RouteTip({
   );
 }
 
-export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
+export function MapView({ route, stale, pieces, uncertain, checkLine = null, onMapApi }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const [styleReady, setStyleReady] = useState(0);
@@ -539,8 +613,13 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
 
   const waypoints = useStore((s) => s.waypoints);
   const showRadar = useStore((s) => s.showRadar);
-  /** Zeitpunkt des angezeigten Radarbilds (ms), für den Hinweis auf der Karte */
-  const [radarTime, setRadarTime] = useState<number | null>(null);
+  const departure = useStore((s) => s.departure);
+  /** verfügbare Zeiträume von Radar und Vorhersage */
+  const [rainCov, setRainCov] = useState<RainCoverage | null>(null);
+  /** angezeigtes Regenbild, gewünschte Uhrzeit und ggf. km auf der Route */
+  const [rain, setRain] = useState<{ frame: RainFrame | null; at: number; km: number | null } | null>(null);
+  /** alle 5 Minuten „jetzt“ neu bestimmen */
+  const [rainTick, setRainTick] = useState(0);
   const basemap = useStore((s) => s.basemap);
   const blocks = useStore((s) => s.blocks);
   const overrides = useStore((s) => s.overrides);
@@ -862,6 +941,9 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
     map.setPaintProperty('uncertain', 'line-opacity', hideRoute || mode !== 'route' ? 0 : 0.95);
     // ausgeblendet: nur die Endpunkte der Auswahl zeigen, damit die Straße sichtbar bleibt
     map.setPaintProperty('selection', 'line-opacity', hideRoute ? 0 : 0.4);
+    // Belags-Check-Markierung: ausgeblendet bleiben nur Anfangs- und Endpunkt
+    map.setPaintProperty('check', 'line-opacity', hideRoute ? 0 : 1);
+    map.setPaintProperty('check-casing', 'line-opacity', hideRoute ? 0 : 0.85);
     map.setPaintProperty('import', 'line-opacity', hideRoute ? 0 : 0.85);
     // Im Luftbild schmaler zeichnen, damit die Straße daneben sichtbar bleibt
     const sat = basemap === 'satellite' || basemap === 'aerial';
@@ -875,6 +957,12 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
     if (!map || !styleReady) return;
     setData(map, 'uncertain', lineFC(uncertain));
   }, [uncertain, styleReady]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !styleReady) return;
+    setData(map, 'check', checkLine ? lineFC([checkLine]) : EMPTY);
+  }, [checkLine, styleReady]);
 
   // Rundtour-Vorschläge
   useEffect(() => {
@@ -1093,53 +1181,97 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
     setData(map, 'traces-box', lineFC(cellOutlines()));
   }, [tracesVersion, styleReady]);
 
-  // Regenradar (RainViewer): jüngstes Bild, alle 10 Minuten aktualisiert
+  // Regen (DWD): Radar bzw. Vorhersage zur Uhrzeit – jetzt, zur geplanten Abfahrt oder,
+  // während die Maus über Streckenband/Route fährt, zur Ankunftszeit an dieser Stelle
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !styleReady) return;
-    const remove = () => {
-      if (map.getLayer('radar')) map.removeLayer('radar');
-      if (map.getSource('radar')) map.removeSource('radar');
-    };
     if (!showRadar) {
-      remove();
-      setRadarTime(null);
+      setRainCov(null);
       return;
     }
     let alive = true;
-    const load = async () => {
-      try {
-        const j = await (await fetch('https://api.rainviewer.com/public/weather-maps.json')).json();
-        const frame = j.radar?.past?.[j.radar.past.length - 1];
-        if (!alive || !frame) return;
-        const tiles = [`${j.host}${frame.path}/256/{z}/{x}/{y}/2/1_1.png`];
-        setRadarTime(frame.time * 1000);
-        const src = map.getSource('radar') as RasterTileSource | undefined;
-        if (src) src.setTiles(tiles);
-        else {
-          map.addSource('radar', {
-            type: 'raster',
-            tiles,
-            tileSize: 256,
-            maxzoom: 7,
-            attribution: 'Regenradar © RainViewer',
-          });
-          map.addLayer(
-            { id: 'radar', type: 'raster', source: 'radar', paint: { 'raster-opacity': 0.65 } },
-            map.getLayer('route-casing') ? 'route-casing' : undefined,
-          );
-        }
-      } catch {
-        /* Radar nicht erreichbar – Karte bleibt ohne */
-      }
-    };
-    void load();
-    const timer = window.setInterval(load, 10 * 60_000);
+    const load = () => void rainCoverage().then((c) => alive && setRainCov(c));
+    load();
+    const timer = window.setInterval(() => {
+      load();
+      setRainTick((n) => n + 1);
+    }, 5 * 60_000);
     return () => {
       alive = false;
       window.clearInterval(timer);
     };
-  }, [showRadar, styleReady]);
+  }, [showRadar]);
+
+  useEffect(() => {
+    if (!showRadar || !rainCov) {
+      setRain(null);
+      return;
+    }
+    // beim schnellen Fahren über das Streckenband nicht jedes Zwischenbild laden
+    const t = window.setTimeout(() => {
+      const now = Date.now();
+      const total = route ? route.dist[route.dist.length - 1] || 1 : 1;
+      const start = departure ?? now;
+      // „jetzt“: jüngstes gemessenes Radarbild statt der ersten Vorhersage
+      let at = now - 5 * 60_000;
+      let km: number | null = null;
+      if (mode === 'route' && route && hoverDistance !== null) {
+        at = start + (route.time * 1000 * hoverDistance) / total;
+        km = hoverDistance;
+      } else if (mode === 'route' && route && departure !== null && departure > now + 15 * 60_000) at = departure;
+      setRain({ frame: rainFrameAt(at, rainCov, now), at, km });
+    }, 90);
+    return () => window.clearTimeout(t);
+  }, [showRadar, rainCov, rainTick, route, hoverDistance, departure, mode]);
+
+  const rainKey = rain?.frame ? `${rain.frame.kind}/${rain.frame.time}` : null;
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !styleReady) return;
+    const frame = rain?.frame;
+    if (!frame) {
+      if (map.getLayer('radar')) map.removeLayer('radar');
+      if (map.getSource('radar')) map.removeSource('radar');
+      return;
+    }
+    const tiles = rainTiles(frame);
+    const src = map.getSource('radar') as RasterTileSource | undefined;
+    if (src) src.setTiles(tiles);
+    else {
+      map.addSource('radar', {
+        type: 'raster',
+        tiles,
+        tileSize: RAIN_TILE_SIZE,
+        maxzoom: RAIN_MAX_ZOOM,
+        attribution: 'Niederschlag © Deutscher Wetterdienst',
+      });
+      map.addLayer(
+        { id: 'radar', type: 'raster', source: 'radar', paint: { 'raster-fade-duration': 0 } },
+        map.getLayer('route-casing') ? 'route-casing' : undefined,
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rainKey, styleReady]);
+
+  // Bilder für die Zeiten entlang der Route vorab laden – nach jeder Kartenbewegung
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !styleReady || !showRadar || !rainCov || mode !== 'route' || !route) return;
+    const run = () => {
+      const b = map.getBounds();
+      const frames = framesAlong(departure ?? Date.now(), route.time, rainCov);
+      prefetchRain(frames, visibleRainTiles([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()], map.getZoom()));
+    };
+    let timer = window.setTimeout(run, 1500);
+    const onMove = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(run, 800);
+    };
+    map.on('moveend', onMove);
+    return () => {
+      window.clearTimeout(timer);
+      map.off('moveend', onMove);
+    };
+  }, [styleReady, showRadar, rainCov, mode, route, departure]);
 
   // Radrouten-Netz und gewählte Radroute
   const netOverlay = useStore((s) => s.netOverlay);
@@ -1439,12 +1571,7 @@ export function MapView({ route, stale, pieces, uncertain, onMapApi }: Props) {
             </div>
           );
         })()}
-      {showRadar && radarTime && (
-        <div className="radar-chip" title="Niederschlag laut RainViewer, alle 10 Minuten neu">
-          <Icon name="radar" size={14} />
-          Regenradar · Stand {new Date(radarTime).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
-        </div>
-      )}
+      {showRadar && rain && <RainChip rain={rain} />}
       {tip && route && !menu && (
         <RouteTip
           route={route}

@@ -21,9 +21,9 @@ Die Seitenleiste hat fünf Bereiche (Leiste links, auf dem Handy oben):
 |---|---|
 | **Planen** | Route setzen und bearbeiten, Übersicht (Distanz, Anstieg, Belag, Straßenart), Export/Import; darunter Wetter & Wind, Belags-Check, Anstiege, Stopps und angepasste Etappen als aufklappbare Liste |
 | **Entdecken** | Rundtour vorschlagen lassen, Ziele in der Umgebung, beschilderte Radwege |
-| **Meine** | Gespeicherte Routen und eigene Heatmap |
 | **Profil** | Radtyp (Rennrad, Gravel, MTB, Trekking), Voreinstellungen, Belag/Straßenart im Detail, dauerhafte Sperren |
-| **Admin** | Nur mit Anmeldung (Veloterra-Server): Mapillary-Token und BRouter-/Overpass-Server für alle Besucher, GPS-Spuren einer Region für alle vorab laden, Datensicherung als Datei |
+| **Meine** (unten) | Gespeicherte Routen, eigene Heatmap und dein Tempo, „Als App installieren“ |
+| **Login** (unten) | Anmelden für alle (Veloterra-Server); angemeldet heißt der Knopf **Konto**: Sync-Status, Passwort ändern, Abmelden. Admins sehen darunter die **Verwaltung**: Konten, Mapillary-Token und BRouter-/Overpass-Server für alle Besucher, GPS-Spuren einer Region für alle. Dazu für alle die Datensicherung als Datei |
 
 Der aktuelle Radtyp steht oben rechts immer sichtbar; ein Klick öffnet das Profil. Die Karte startet immer mit **Luftbild DE**. Oben links auf der Karte: **↶ ↷** (Rückgängig/Wiederholen), **Ebenen** (Kartenstil, Einfärbung, Stopps, Fotos, Radrouten-Netz, Heatmaps) und **Route ausblenden**.
 
@@ -44,8 +44,8 @@ Der aktuelle Radtyp steht oben rechts immer sichtbar; ein Klick öffnet das Prof
 | Luftbild | Ebenen → „Satellit“ (Esri, weltweit) oder **„Luftbild DE“** (amtliche Luftbilder 20–40 cm für RLP, NRW, Hessen, Bayern – schärfer und aktueller) wählen, oder auf die Route klicken → „Im Luftbild ansehen“ |
 | Einfärbung | Ebenen → Untergrund · Straßenart · **Steigung** · **Wind** (Gegen-/Rückenwind zur Abfahrtszeit) · Einfarbig |
 | Anstiege | Liste in der Seitenleiste (Länge, Ø- und Max-Steigung, Höhenmeter); Klick markiert den Anstieg. Im Höhenprofil rot hinterlegt |
-| Wetter & Wind | Abfahrtszeit wählen → Windrichtung/-stärke, Anteil Gegen-/Rückenwind; darunter das Wetter entlang der Route zur jeweiligen Ankunftszeit (Temperatur, Wetterlage, Regenwahrscheinlichkeit). Ebenen → „Regenradar“ zeigt den aktuellen Niederschlag in der Umgebung |
-| Belags-Check | Karte „Belags-Check“: Abschnitte, deren Belag in OSM fehlt oder nur geschätzt ist (Wirtschafts-, Rad- und Feldwege ohne `surface`), auf der Karte weiß gepunktet. Klick → Luftbild DE, Route ausgeblendet, Straßenfoto falls vorhanden. „Passt“ blendet den Abschnitt dauerhaft aus, „Umfahren“ plant drumherum, „In OpenStreetMap eintragen“ öffnet den Editor an der Stelle |
+| Wetter & Wind | Abfahrtszeit wählen → Windrichtung/-stärke, Anteil Gegen-/Rückenwind; darunter das Wetter entlang der Route zur jeweiligen Ankunftszeit (Temperatur, Wetterlage, Regenwahrscheinlichkeit). Ebenen → „Regenradar“ zeigt den Niederschlag vom Deutschen Wetterdienst: jetzt (gemessen), zur geplanten Abfahrt oder – während die Maus über das Streckenband oder die Route fährt – zur **Ankunftszeit an dieser Stelle**. Bis ca. 2 Stunden voraus Radar-Vorhersage in 5-Minuten-Schritten, danach die stündliche Modellvorhersage ICON-EU (ca. 3 Tage). Eine Farbskala für beides: Blau = leicht bis kräftig, Gelb/Orange/Rot = stark |
+| Belags-Check | Karte „Belags-Check“: Abschnitte, deren Belag in OSM fehlt oder nur geschätzt ist (Wirtschafts-, Rad- und Feldwege ohne `surface`), auf der Karte weiß gepunktet. Klick → Luftbild DE, der Abschnitt wird gelb auf der Route hervorgehoben (Taste H blendet die Route aus, um die Straße zu sehen), Straßenfoto falls vorhanden. „Passt“ blendet den Abschnitt dauerhaft aus, „Umfahren“ plant drumherum, „In OpenStreetMap eintragen“ öffnet den Editor an der Stelle |
 | Stopps unterwegs | Ebenen → „Stopps unterwegs“: Cafés & Bäcker, Trinkwasser, Rad-Service, Aussichtspunkte, WC bis 300 m neben der Route – mit km-Angabe; „Als Wegpunkt einfügen“ |
 | Fotos der Strecke | Ebenen → „Fotos der Strecke“: Straßenfotos entlang der Route (Panoramax; mit eigenem Mapillary-Token deutlich mehr), Großansicht mit ← → |
 | Route kurz ausblenden | Taste **H** oder „Route ausblenden“ – um die Straße darunter zu sehen |
@@ -54,12 +54,28 @@ Der aktuelle Radtyp steht oben rechts immer sichtbar; ein Klick öffnet das Prof
 | Export | „GPX exportieren“ bzw. ▾ für weitere Formate: **GPX** mit Abbiegehinweisen (Wegpunkte „Rechts abbiegen“ …) · **TCX** mit CoursePoints für Garmin Edge · GPX „ohne Hinweise“ |
 | Import | „GPX importieren“ oder Datei auf die Karte ziehen (z. B. Komoot-/Strava-Export). Der Track wird mit dichten Stützpunkten nachgerechnet, damit Belag und Straßenart bekannt sind, und bleibt bis zur Bearbeitung exakt. „Mit meinem Profil planen“ rechnet ihn nach deinen Einstellungen neu |
 | Meine Routen | Route benennen und speichern – direkt über „GPX exportieren“ (Punkt = ungespeicherte Änderungen) oder unter **Meine** –, später laden, umbenennen, löschen (inkl. berechneter Etappen) |
+| **Teilen** | „Teilen“ neben dem Export: Link zum Kopieren, QR-Code fürs Handy und „Über eine App teilen“. Angemeldet entsteht ein kurzer Link über den Veloterra-Server (Route kommt exakt so an); ohne Konto steckt die Route komprimiert im `#`-Teil des Links und wird beim Empfänger mit deinen Einstellungen neu berechnet |
+| Fahrzeit | Nach **deinem Tempo**, sobald unter **Meine → Meine Heatmap** Fahrten mit Zeit und Höhe importiert sind (sonst die Schätzung von BRouter). Gilt auch für Wind, Wetter unterwegs, Rundtour-Vorschläge und die Zeiten im GPX |
 
-Alles (Route, Einstellungen, Sperren, gespeicherte Routen, berechnete Etappen) wird im Browser gespeichert – nach dem Neuladen ist die Route ohne neue Server-Anfrage da.
+Alles (Route, Einstellungen, Sperren, gespeicherte Routen, berechnete Etappen) wird im Browser gespeichert – nach dem Neuladen ist die Route ohne neue Server-Anfrage da. Mit **Konto** auf dem Veloterra-Server werden gespeicherte Routen und Heatmap zusätzlich synchronisiert (siehe unten).
+
+## Konto und Sync
+
+Mit dem optionalen Veloterra-Server (Dienst `veloterra-api`) gibt es Benutzerkonten mit Name und Passwort. Konten legt ein Admin unter **Konto → Verwaltung → Konten** an; angemeldet wird sich über **Login** unten in der Leiste.
+
+- **Meine Routen** (mit berechneten Etappen) und die **Fahrten der Heatmap** samt Tempo-Daten liegen dann im Konto – auf allen Geräten, auf denen du angemeldet bist. Abgleich nach jeder Änderung, beim Anmelden und wenn die Seite wieder in den Vordergrund kommt; „Jetzt abgleichen“ erzwingt ihn.
+- Neuerer Stand gewinnt; gelöschte Routen verschwinden auch auf den anderen Geräten.
+- Ohne Anmeldung bleibt alles wie bisher nur im Browser. Meldet sich in einem Browser ein **anderes** Konto an, ersetzt es Routen und Heatmap dort durch seine eigenen (nichts wird vermischt).
+- Passwort ändern unter **Konto** (andere Geräte werden dabei abgemeldet); Admins können Passwörter zurücksetzen, Admin-Rechte vergeben und Konten löschen.
+
+## Als App (PWA)
+
+Veloterra lässt sich installieren (Chrome/Edge: Symbol in der Adressleiste oder **Meine → Als App installieren**; iPhone: Safari → Teilen → „Zum Home-Bildschirm“). Ein Service Worker hält die App und bereits angesehene Kartenkacheln (bis ca. 4000, auch Luftbild DE) vor: Die App startet schneller und zeigt die **zuletzt geplante Route auch ohne Netz**. Routing, Wetter und Sync brauchen weiterhin Netz – oben auf der Karte erscheint dann „Offline“.
 
 ## Heatmap
 
-- **Meine Heatmap** (Seitenleiste): eigene Fahrten importieren – den kompletten **Strava-Datenexport** (ZIP; Strava → Einstellungen → Mein Konto → „Konto herunterladen oder löschen“) oder einzelne **GPX/TCX/FIT**-Dateien (auch `.gz`), z. B. aus Komoot oder Garmin. Aus dem Strava-Export werden nur Radfahrten im Freien übernommen (keine Läufe, keine virtuellen Fahrten). Die Fahrten werden vereinfacht im Browser gespeichert (IndexedDB) – nichts wird hochgeladen.
+- **Meine Heatmap** (Seitenleiste): eigene Fahrten importieren – den kompletten **Strava-Datenexport** (ZIP; Strava → Einstellungen → Mein Konto → „Konto herunterladen oder löschen“) oder einzelne **GPX/TCX/FIT**-Dateien (auch `.gz`), z. B. aus Komoot oder Garmin. Aus dem Strava-Export werden nur Radfahrten im Freien übernommen (keine Läufe, keine virtuellen Fahrten). Die Fahrten werden vereinfacht im Browser gespeichert (IndexedDB) – hochgeladen nur, wenn du mit einem Konto angemeldet bist.
+- **Dein Tempo**: Aus Zeit und Höhe der importierten Fahrten ermittelt Veloterra deine Geschwindigkeit je Steigung (steil bergab, bergab, flach, 2–5 %, 5–8 %, über 8 %) – ohne Pausen und GPS-Sprünge, aus den letzten 60 Fahrten. Gibt es mindestens 5 Fahrten passend zum gewählten Radtyp (Strava-Typ „Gravel Ride“, „Mountain Bike Ride“ …), zählen nur diese; E-Bike-Fahrten nie. Klassen mit zu wenig Daten werden aus deinem Flach-Tempo abgeleitet (grau). Schon früher importierte Fahrten einfach erneut importieren, um das Tempo zu ergänzen. Abschaltbar mit „Fahrzeit nach meinem Tempo berechnen“.
 - Ebenen → **Meine Fahrten** zeigt sie als Heatmap; Einfärbung **„Neu für mich“** markiert, welche Teile der Route du noch nie gefahren bist. Die Routenübersicht zeigt den Anteil („71 % neu für dich“), Rundtour-Vorschläge ebenso – mit Sortierung **„Neue Straßen“**.
 - Ebenen → **Öffentliche GPS-Spuren**: zu OpenStreetMap hochgeladene Tracks.
   - **Dichte (viel/wenig)**: „Bereich laden“ holt die GPS-Punkte des sichtbaren Bereichs in festen Kacheln (0,1° × 0,1°, ca. 7 × 11 km; höchstens 20 Kacheln auf einmal) und zeigt sie als Heatmap – blau = wenig, rot = viel befahren. Die Kacheln bleiben dauerhaft im Browser gespeichert (IndexedDB, auf der Karte gestrichelt umrandet): Zoomen, Verschieben und Neustarts laden nichts nach. „Bereich aktualisieren“ holt sie neu, „Alle löschen“ entfernt sie. In sehr dichten Gebieten lädt die App eine Kachel in Vierteln. Jede Spur wird gleichmäßig gezählt, egal wie oft das Gerät eine Position gespeichert hat.
@@ -153,11 +169,11 @@ Veloterra gibt es als zwei Container-Images, die GitHub bei jedem Push auf `main
 
    **Bereits installierte Container** nutzen ihre gespeicherte Kopie `my-<Name>.xml` – neue Felder einer aktualisierten Vorlage erscheinen dort nicht. Entweder das Feld beim Container unter *Edit → Add another Path, Port, Variable…* von Hand ergänzen (z. B. Variable `API_UPSTREAM`) oder den Container entfernen, `my-<Name>.xml` löschen und neu aus der Vorlage anlegen.
 2. *Docker → Add Container → Template:* **Veloterra-BRouter** wählen, Kacheln prüfen (Standard: Deutschland + Nachbarn, ca. 1 GB in `/mnt/user/appdata/veloterra-brouter`) → *Apply*. Der erste Start lädt die Kartendaten, das dauert einige Minuten (siehe Log).
-3. Optional für den Admin-Bereich: *Add Container → Template:* **Veloterra-API** wählen, ein **Admin-Passwort** setzen (Daten landen in `/mnt/user/appdata/veloterra-api`) → *Apply*.
-4. *Add Container → Template:* **Veloterra** wählen, **Eigener BRouter (intern)** auf `http://<IP-des-Unraid-Servers>:17777` setzen, für den Admin-Bereich außerdem **Veloterra-API (intern)** auf `http://<IP-des-Unraid-Servers>:8787` → *Apply*.
+3. Optional für Konten mit Sync und den Admin-Bereich: *Add Container → Template:* **Veloterra-API** wählen, ein **Admin-Passwort** setzen (Daten landen in `/mnt/user/appdata/veloterra-api`) → *Apply*. Anmelden in Veloterra mit Benutzername `admin`; weitere Konten unter **Konto → Verwaltung → Konten**.
+4. *Add Container → Template:* **Veloterra** wählen, **Eigener BRouter (intern)** auf `http://<IP-des-Unraid-Servers>:17777` setzen, für Konten und Admin-Bereich außerdem **Veloterra-API (intern)** auf `http://<IP-des-Unraid-Servers>:8787` → *Apply*.
 5. Öffnen: `http://<IP-des-Unraid-Servers>:8088` (oder über das WebUI-Symbol).
 
-Ohne den BRouter-Container funktioniert Veloterra auch – dann einfach Schritt 2 weglassen und das Feld in Schritt 4 leer lassen; geroutet wird dann über brouter.de. Ohne Veloterra-API (Schritt 3) läuft die App nur im Browser, ohne Admin-Bereich.
+Ohne den BRouter-Container funktioniert Veloterra auch – dann einfach Schritt 2 weglassen und das Feld in Schritt 4 leer lassen; geroutet wird dann über brouter.de. Ohne Veloterra-API (Schritt 3) läuft die App nur im Browser, ohne Konten und Admin-Bereich.
 
 Der API-Port 8787 ist im Heimnetz erreichbar, damit Veloterra ihn ansprechen kann. Er sollte nicht ins Internet freigegeben werden – von außen läuft alles über Veloterra (Port 8088).
 
@@ -181,18 +197,19 @@ Die Datei `docker-compose.yml` startet drei Container; Veloterra erreicht BRoute
 |---|---|
 | `BROUTER_UPSTREAM` | Interne Adresse eines eigenen BRouter-Servers. nginx leitet `/brouter` dorthin weiter – der Browser braucht keinen direkten Zugriff, keine CORS-Probleme |
 | `BROUTER_URL` | Alternativ: URL, die der Browser direkt anspricht. Leer = brouter.de |
-| `API_UPSTREAM` | Interne Adresse des Veloterra-Servers. nginx leitet `/api` dorthin weiter. Leer = kein Admin-Bereich, die App läuft nur im Browser |
+| `API_UPSTREAM` | Interne Adresse des Veloterra-Servers. nginx leitet `/api` dorthin weiter. Leer = keine Konten und kein Admin-Bereich, die App läuft nur im Browser |
 
-**Veloterra-API** (Admin-Bereich, optional)
+**Veloterra-API** (Konten, Sync, Admin-Bereich – optional)
 
 | Variable | Standard | Bedeutung |
 |---|---|---|
-| `ADMIN_PASSWORD` | – | Passwort für den Admin-Bereich. Ohne Passwort ist die Anmeldung gesperrt |
-| `DATA_DIR` | `/data` | Einstellungen (`config.json`) und GPS-Kacheln (`traces/`); als Volume nach appdata einbinden |
+| `ADMIN_PASSWORD` | – | Passwort des Admin-Kontos. Ohne Passwort gibt es keinen Admin aus der Umgebung (angelegte Konten mit Admin-Rechten funktionieren weiter) |
+| `ADMIN_USER` | `admin` | Benutzername des Admin-Kontos |
+| `DATA_DIR` | `/data` | Einstellungen (`config.json`), Konten (`users.json`, `sessions.json`), Daten je Konto (`users/`), geteilte Routen (`shares/`) und GPS-Kacheln (`traces/`); als Volume nach appdata einbinden |
 
-Im Admin-Bereich (Zahnrad, nach Anmeldung) gelten Mapillary-Token, BRouter- und Overpass-Server **für alle Besucher**. Unter **„GPS-Spuren für alle“** lädt der Server die öffentlichen GPS-Spuren einer Region – z. B. ganz Rheinland-Pfalz (~480 Kacheln, ca. 1–1,5 Std.) – einmal bei OpenStreetMap, nacheinander und mit Pause, um die Schnittstelle zu schonen. Der Ladevorgang läuft auch weiter, wenn der Browser geschlossen ist. Danach bekommen alle Besucher die Kacheln direkt vom Server; nur was dort fehlt, lädt der Browser noch selbst.
+In der Verwaltung (Login unten in der Leiste, als Admin angemeldet) gelten Mapillary-Token, BRouter- und Overpass-Server **für alle Besucher**. Unter **„GPS-Spuren für alle“** lädt der Server die öffentlichen GPS-Spuren einer Region – z. B. ganz Rheinland-Pfalz (~480 Kacheln, ca. 1–1,5 Std.) – einmal bei OpenStreetMap, nacheinander und mit Pause, um die Schnittstelle zu schonen. Der Ladevorgang läuft auch weiter, wenn der Browser geschlossen ist. Danach bekommen alle Besucher die Kacheln direkt vom Server; nur was dort fehlt, lädt der Browser noch selbst.
 
-Anmeldung: Sitzungs-Cookie (30 Tage, HttpOnly, SameSite=Strict), höchstens 8 Fehlversuche je Adresse in 15 Minuten. Hinter einem HTTPS-Reverse-Proxy (`X-Forwarded-Proto: https`) wird das Cookie zusätzlich als `Secure` markiert.
+Anmeldung: Benutzername und Passwort (Passwörter als scrypt-Hash mit Salt), Sitzungs-Cookie (30 Tage, HttpOnly, SameSite=Strict; auf dem Server nur als Hash gespeichert, übersteht Neustarts), höchstens 8 Fehlversuche je Adresse und 40 insgesamt in 15 Minuten. Der Admin aus `ADMIN_PASSWORD` meldet sich mit `admin` (bzw. `ADMIN_USER`) an; sein Passwort ändert man nur über die Variable. Hinter einem HTTPS-Reverse-Proxy (`X-Forwarded-Proto: https`) wird das Cookie zusätzlich als `Secure` markiert.
 
 **Veloterra-BRouter**
 
@@ -212,7 +229,7 @@ Mit eigenem Server stellt die App bis zu 4 Anfragen gleichzeitig – Rundtour-Su
 VITE_BROUTER_URL=http://localhost:17777/brouter npm run dev
 ```
 
-### Lokal entwickeln mit Veloterra-Server (Admin)
+### Lokal entwickeln mit Veloterra-Server (Konten, Admin)
 
 ```bash
 ADMIN_PASSWORD=test npm run dev:server   # Port 8787, Daten in ./data-api

@@ -22,8 +22,8 @@ services:
       - veloterra-api
     restart: unless-stopped
 
-  # Admin-Bereich mit Anmeldung, seitenweite Einstellungen (Mapillary-Token,
-  # Server) und GPS-Spuren, die einmal für alle Besucher geladen werden
+  # Benutzerkonten mit Sync (Routen, Heatmap), Admin-Bereich, seitenweite
+  # Einstellungen, geteilte Routen und GPS-Spuren für alle Besucher
   veloterra-api:
     image: ghcr.io/t4s3rf4c3/veloterra-api:latest
     build:
@@ -31,8 +31,9 @@ services:
       dockerfile: docker/api/Dockerfile
     container_name: veloterra-api
     environment:
-      # Passwort für den Admin-Bereich – bitte ändern (ohne: Anmeldung gesperrt)
+      # Admin-Konto (Benutzername admin) – bitte ein langes Passwort setzen
       ADMIN_PASSWORD: ${VELOTERRA_ADMIN_PASSWORD:-}
+      ADMIN_USER: ${VELOTERRA_ADMIN_USER:-admin}
     volumes:
       - ${APPDATA:-./data}/api:/data
     restart: unless-stopped

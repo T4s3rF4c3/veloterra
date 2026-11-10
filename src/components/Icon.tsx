@@ -79,6 +79,15 @@ const PATHS = {
       <circle cx="12" cy="12" r="2" />
     </>
   ),
+  link: <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />,
+  share: (
+    <>
+      <circle cx="17.5" cy="5.5" r="2.5" />
+      <circle cx="6.5" cy="12" r="2.5" />
+      <circle cx="17.5" cy="18.5" r="2.5" />
+      <path d="m8.7 10.8 6.6-4M8.7 13.2l6.6 4" />
+    </>
+  ),
   external: <path d="M14 4h6v6m0-6-9 9m7 1v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />,
   // Inhalte
   wind: <path d="M3 8h10a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7" />,
@@ -102,6 +111,12 @@ const PATHS = {
       <rect x="3.5" y="4.5" width="17" height="15" rx="2" />
       <path d="m3.5 16 5-5 4 4 2.5-2.5 5 5" />
       <circle cx="15.5" cy="9" r="1.5" />
+    </>
+  ),
+  user: (
+    <>
+      <circle cx="12" cy="8.5" r="3.5" />
+      <path d="M5 20a7 7 0 0 1 14 0" />
     </>
   ),
   person: (

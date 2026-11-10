@@ -11,9 +11,13 @@ import type { Coloring } from '../hooks/useColoring';
 import { useHeat } from '../api/heatStore';
 import { useImport } from '../hooks/useImport';
 import type { LegStatus } from '../hooks/useRouting';
+import { usePace } from '../hooks/usePace';
 import { departureTime, useRouteWeather } from '../hooks/useWind';
 import { useStore, type Area, type Mode } from '../store';
+import { SyncHint } from './Account';
+import { useSite } from '../api/site';
 import { AdminPanel } from './AdminPanel';
+import { InstallCard } from './InstallCard';
 import { ExplorePanel } from './ExplorePanel';
 import { Library, SaveRow } from './Library';
 import { HeatPanel } from './HeatPanel';
@@ -22,6 +26,7 @@ import { NetworkPanel } from './NetworkPanel';
 import { Panel } from './Panel';
 import { ClimbList, StopsList } from './RouteExtras';
 import { SettingsEditor } from './SettingsEditor';
+import { ShareButton } from './ShareDialog';
 import { SurfaceCheck } from './SurfaceCheck';
 import { WeatherAlong, WindCard } from './WindCard';
 import { Icon, type IconName } from './Icon';
@@ -291,12 +296,13 @@ function ImportButton({ fit }: { fit: (c: LngLat[]) => void }) {
   );
 }
 
+/** Arbeitsbereiche oben, persönliche Bereiche (Meine, Login) unten */
 const AREAS: { value: Area; label: string; hint: string }[] = [
   { value: 'plan', label: 'Planen', hint: 'Route planen und bearbeiten' },
   { value: 'discover', label: 'Entdecken', hint: 'Rundtouren, Ziele und beschilderte Radwege' },
-  { value: 'mine', label: 'Meine', hint: 'Gespeicherte Routen und eigene Heatmap' },
   { value: 'profile', label: 'Profil', hint: 'Radtyp und Routing-Einstellungen' },
-  { value: 'admin', label: 'Admin', hint: 'Zugänge, Server und Datensicherung' },
+  { value: 'mine', label: 'Meine', hint: 'Gespeicherte Routen, eigene Heatmap und dein Tempo' },
+  { value: 'admin', label: 'Login', hint: 'Anmelden, Konto und Sync – für Admins auch Server und Konten' },
 ];
 
 const DISCOVER: { value: Exclude<Mode, 'route'>; label: string; hint: string }[] = [
@@ -310,7 +316,7 @@ const AREA_TITLE: Record<Area, string> = {
   discover: 'Entdecken',
   mine: 'Meine Daten',
   profile: 'Profil',
-  admin: 'Admin',
+  admin: 'Login',
 };
 
 const AREA_ICON: Record<Area, IconName> = {
@@ -318,14 +324,14 @@ const AREA_ICON: Record<Area, IconName> = {
   discover: 'compass',
   mine: 'folder',
   profile: 'bike',
-  admin: 'gear',
+  admin: 'user',
 };
 
 /** Kennzahl mit kleiner gesetzter Einheit („87 km“ → 87 + km). */
-function Stat({ value, label }: { value: string | null; label: string }) {
+function Stat({ value, label, hint }: { value: string | null; label: string; hint?: string }) {
   const [num, unit] = value ? value.split(' ') : ['–'];
   return (
-    <div>
+    <div title={hint}>
       <small className="cap">{label}</small>
       <b>
         {num}
@@ -418,6 +424,8 @@ export function Sidebar({
   const routeName = useStore((s) => s.routeName);
   const departure = departureTime(useStore((s) => s.departure));
   const heat = useHeat((s) => s.index);
+  const user = useSite((s) => s.user);
+  const pace = usePace();
   const st = useStore.getState;
 
   const total = route ? route.dist[route.dist.length - 1] : 0;
@@ -436,25 +444,35 @@ export function Sidebar({
     <aside className="sidebar">
       <nav className="rail" aria-label="Bereiche">
         <img className="rail-logo" src="/icon.svg" alt="Veloterra" />
-        {AREAS.map((a) => (
-          <button
-            key={a.value}
-            className={`${area === a.value ? 'on' : ''} ${a.value === 'admin' ? 'rail-end' : ''}`}
-            onClick={() => st().setArea(a.value)}
-            title={a.hint}
-            aria-current={area === a.value ? 'page' : undefined}
-          >
-            <span className="rail-pill">
-              <Icon name={AREA_ICON[a.value]} size={20} />
-            </span>
-            {a.label}
-          </button>
-        ))}
+        {AREAS.map((a) => {
+          // angemeldet: Login wird zum Konto (Anfangsbuchstabe statt Symbol)
+          const account = a.value === 'admin' && user;
+          return (
+            <button
+              key={a.value}
+              className={`${area === a.value ? 'on' : ''} ${a.value === 'mine' ? 'rail-end' : ''}`}
+              onClick={() => st().setArea(a.value)}
+              title={account ? `Angemeldet als ${user.name} – Konto und Sync` : a.hint}
+              aria-current={area === a.value ? 'page' : undefined}
+            >
+              <span className="rail-pill">
+                {account ? (
+                  <span className="rail-avatar" aria-hidden>
+                    {user.name.slice(0, 1).toUpperCase()}
+                  </span>
+                ) : (
+                  <Icon name={AREA_ICON[a.value]} size={20} />
+                )}
+              </span>
+              {account ? 'Konto' : a.label}
+            </button>
+          );
+        })}
       </nav>
 
       <div className="pane">
         <header className="pane-head">
-          <h1>{AREA_TITLE[area]}</h1>
+          <h1>{area === 'admin' && user ? 'Konto' : AREA_TITLE[area]}</h1>
           {area !== 'profile' && area !== 'admin' && <ProfilePill />}
         </header>
 
@@ -480,7 +498,15 @@ export function Sidebar({
                   <div className="stats">
                     <Stat label="Distanz" value={route ? `${formatKmExact(total)} km` : null} />
                     <Stat label="Anstieg" value={route ? `${Math.round(route.ascend)} hm` : null} />
-                    <Stat label="Fahrzeit" value={route ? formatDuration(route.time) : null} />
+                    <Stat
+                      label={pace ? 'Deine Zeit' : 'Fahrzeit'}
+                      value={route ? formatDuration(route.time) : null}
+                      hint={
+                        pace
+                          ? `Nach deinem Tempo aus ${pace.rides} eigenen Fahrten (flach ${Math.round(pace.speeds.flat)} km/h)`
+                          : 'Schätzung von BRouter – mit eigenen Fahrten unter „Meine“ wird es dein Tempo'
+                      }
+                    />
                     {loading && <span className="spinner" title="Route wird berechnet" />}
                   </div>
                   {errors.length > 0 && (
@@ -558,7 +584,10 @@ export function Sidebar({
               {waypoints.length >= 2 && (
                 <div className="route-footer">
                   <SaveRow route={route} />
-                  <ExportMenu route={route} name={routeName} />
+                  <div className="footer-actions">
+                    <ShareButton disabled={!route} />
+                    <ExportMenu route={route} name={routeName} />
+                  </div>
                 </div>
               )}
             </section>
@@ -663,10 +692,14 @@ export function Sidebar({
 
         {/* ===== Meine Daten ===== */}
         {area === 'mine' && (
-          <div className="panel-group">
-            <Library route={route} fit={fit} />
-            <HeatPanel />
-          </div>
+          <>
+            <SyncHint />
+            <div className="panel-group">
+              <Library route={route} fit={fit} />
+              <HeatPanel />
+            </div>
+            <InstallCard />
+          </>
         )}
 
         {/* ===== Admin ===== */}

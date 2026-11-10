@@ -2,12 +2,11 @@ import { Panel } from './Panel';
 import { useState } from 'react';
 import { formatKm, type LngLat } from '../domain/geo';
 import type { CombinedRoute } from '../domain/route';
+import { useSite } from '../api/site';
+import { fetchLegs, legsKey } from '../api/sync';
 import { restoreLegs, snapshotLegs } from '../hooks/useRouting';
 import { useStore } from '../store';
 import { Icon } from './Icon';
-
-/** Etappen gespeicherter Routen liegen getrennt, damit die Liste klein bleibt. */
-const legsKey = (id: string) => `bike-planner-route-${id}`;
 
 function save(route: CombinedRoute, asNew = false) {
   const st = useStore.getState();
@@ -20,12 +19,10 @@ function save(route: CombinedRoute, asNew = false) {
   }
 }
 
-function load(id: string) {
-  try {
-    restoreLegs(JSON.parse(localStorage.getItem(legsKey(id)) ?? '{}'));
-  } catch {
-    /* ignorieren */
-  }
+async function load(id: string) {
+  // Etappen aus diesem Browser oder – bei synchronisierten Routen – vom Konto
+  const legs = await fetchLegs(id);
+  if (legs) restoreLegs(legs);
   useStore.getState().loadRoute(id);
 }
 
@@ -89,6 +86,7 @@ export function Library({ route, fit }: { route: CombinedRoute | null; fit: (c: 
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const saved = library.find((r) => r.id === savedId);
+  const user = useSite((s) => s.user);
 
   return (
     <Panel
@@ -101,7 +99,10 @@ export function Library({ route, fit }: { route: CombinedRoute | null; fit: (c: 
     >
       {waypoints.length >= 2 && <SaveRow route={route} />}
       {library.length === 0 ? (
-        <p className="muted small">Noch keine Routen gespeichert. Alles bleibt in diesem Browser.</p>
+        <p className="muted small">
+          Noch keine Routen gespeichert.{' '}
+          {user ? 'Gespeicherte Routen gibt es dann auf allen deinen Geräten.' : 'Alles bleibt in diesem Browser.'}
+        </p>
       ) : (
         <ul className="list library">
           {library.map((r) => (
@@ -123,8 +124,8 @@ export function Library({ route, fit }: { route: CombinedRoute | null; fit: (c: 
               ) : (
                 <button
                   className="lib-main"
-                  onClick={() => {
-                    load(r.id);
+                  onClick={async () => {
+                    await load(r.id);
                     fit(r.waypoints.map((w) => [w.lng, w.lat]));
                   }}
                   title="Route laden"

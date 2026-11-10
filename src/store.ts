@@ -88,6 +88,8 @@ interface State {
   gpsMulti: boolean;
   /** eigene Heatmap (importierte Fahrten) anzeigen */
   showMyHeat: boolean;
+  /** Fahrzeit nach dem eigenen Tempo (aus importierten Fahrten) schätzen */
+  usePersonalPace: boolean;
   /** Radwege-Modus: Rad- oder MTB-Routen, welche Ebenen */
   networkKind: NetworkKind;
   networkGroups: NetworkGroup[];
@@ -177,6 +179,7 @@ interface State {
   setGpsFilter: (f: State['gpsFilter']) => void;
   setGpsMulti: (v: boolean) => void;
   setShowMyHeat: (v: boolean) => void;
+  setUsePersonalPace: (v: boolean) => void;
   setNetworkKind: (k: NetworkKind) => void;
   setNetworkGroups: (g: NetworkGroup[]) => void;
   setNetworkRoutes: (r: NetRoute[]) => void;
@@ -227,6 +230,7 @@ export const useStore = create<State>()(
       gpsFilter: 'bike',
       gpsMulti: false,
       showMyHeat: true,
+      usePersonalPace: true,
       networkKind: 'cycling',
       networkGroups: ['INT', 'NAT', 'REG', 'LOC'],
       networkRoutes: [],
@@ -394,6 +398,7 @@ export const useStore = create<State>()(
       setGpsFilter: (gpsFilter) => set({ gpsFilter }),
       setGpsMulti: (gpsMulti) => set({ gpsMulti }),
       setShowMyHeat: (showMyHeat) => set({ showMyHeat }),
+      setUsePersonalPace: (usePersonalPace) => set({ usePersonalPace }),
       setNetworkKind: (networkKind) => set({ networkKind, networkRoutes: [], activeNetwork: null, networkLines: [] }),
       setNetworkGroups: (networkGroups) => set({ networkGroups }),
       setNetworkRoutes: (networkRoutes) => set({ networkRoutes }),
@@ -439,7 +444,8 @@ export const useStore = create<State>()(
         set((s) => ({ library: s.library.filter((r) => r.id !== id), savedId: s.savedId === id ? null : s.savedId })),
       renameRoute: (id, name) =>
         set((s) => ({
-          library: s.library.map((r) => (r.id === id ? { ...r, name } : r)),
+          // savedAt mitziehen, damit die Umbenennung synchronisiert wird
+          library: s.library.map((r) => (r.id === id ? { ...r, name, savedAt: Date.now() } : r)),
           routeName: s.savedId === id ? name : s.routeName,
         })),
     }),
@@ -480,6 +486,7 @@ export const useStore = create<State>()(
         gpsFilter: s.gpsFilter,
         gpsMulti: s.gpsMulti,
         showMyHeat: s.showMyHeat,
+        usePersonalPace: s.usePersonalPace,
         networkKind: s.networkKind,
         networkGroups: s.networkGroups,
         stopCategories: s.stopCategories,

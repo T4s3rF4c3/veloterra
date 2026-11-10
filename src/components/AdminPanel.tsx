@@ -2,18 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { DEFAULT_BROUTER_URL, brouterUrl } from '../api/brouter';
 import { useHeat } from '../api/heatStore';
 import { refreshServerIndex } from '../api/osmTraces';
-import {
-  cancelTraceJob,
-  deleteServerTraces,
-  login,
-  logout,
-  saveSiteConfig,
-  startTraceJob,
-  traceJob,
-  useSite,
-} from '../api/site';
+import { cancelTraceJob, deleteServerTraces, saveSiteConfig, startTraceJob, traceJob, useSite } from '../api/site';
 import { cellsFor, type Bbox } from '../domain/traceGrid';
 import { useStore } from '../store';
+import { AccountCard, LoginForm, UsersCard } from './Account';
 import { Icon } from './Icon';
 
 type Check = { state: 'idle' | 'busy' | 'ok' | 'error'; text?: string };
@@ -163,6 +155,7 @@ type Backup = { exportedAt: string; data: Record<string, string> };
 function BackupCard() {
   const library = useStore((s) => s.library.length);
   const rides = useHeat((s) => s.tracks.length);
+  const user = useSite((s) => s.user);
   const input = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<Backup | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -184,8 +177,10 @@ function BackupCard() {
         <Icon name="database" size={16} /> Datensicherung
       </h2>
       <p className="muted small">
-        Alles liegt nur in diesem Browser: {library} gespeicherte {library === 1 ? 'Route' : 'Routen'}, Einstellungen,
-        Sperren und Zugänge{rides ? ` sowie ${rides} importierte Fahrten (nicht in der Sicherung)` : ''}.
+        {user ? 'Sicherung dieses Browsers' : 'Alles liegt nur in diesem Browser'}: {library} gespeicherte{' '}
+        {library === 1 ? 'Route' : 'Routen'}, Einstellungen, Sperren und Zugänge
+        {rides ? ` sowie ${rides} importierte Fahrten (nicht in der Sicherung)` : ''}.
+        {user ? ' Routen und Fahrten liegen zusätzlich in deinem Konto.' : ''}
       </p>
       <div className="admin-actions">
         <button onClick={exportBackup}>
@@ -404,12 +399,9 @@ function TracesCard({ bounds }: { bounds: () => Bbox | null }) {
   );
 }
 
-/** Anmeldung für den Admin-Bereich */
+/** Anmeldung für alle – Konten, Sync und (für Admins) die Verwaltung */
 function LoginCard() {
   const loginEnabled = useSite((s) => s.loginEnabled);
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
   if (!loginEnabled)
     return (
       <section className="card admin-card">
@@ -425,44 +417,15 @@ function LoginCard() {
   return (
     <section className="card admin-card">
       <h2 className="card-title">
-        <Icon name="key" size={16} /> Anmelden
+        <Icon name="user" size={16} /> Anmelden
       </h2>
-      <form
-        className="admin-field"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setBusy(true);
-          setError(null);
-          try {
-            await login(password);
-            setPassword('');
-          } catch (err) {
-            setError((err as Error).message);
-          } finally {
-            setBusy(false);
-          }
-        }}
-      >
-        <label className="cap" htmlFor="admin-password">
-          Admin-Passwort
-        </label>
-        <div className="admin-row">
-          <input
-            id="admin-password"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoFocus
-          />
-          <button className="primary" type="submit" disabled={!password || busy}>
-            Anmelden
-          </button>
-        </div>
-        {error && <p className="admin-check error">{error}</p>}
-      </form>
       <p className="muted small">
-        Zugänge, Server und die GPS-Spuren für alle Besucher verwaltest du nach der Anmeldung.
+        Mit deinem Konto hast du gespeicherte Routen, deine Heatmap und dein Tempo auf allen Geräten. Konten legt der
+        Admin an.
+      </p>
+      <LoginForm idPrefix="login" />
+      <p className="muted small">
+        Admins verwalten nach der Anmeldung außerdem Konten, Server und die GPS-Spuren für alle Besucher.
       </p>
     </section>
   );
@@ -476,7 +439,7 @@ function NoServerCard() {
         <Icon name="server" size={16} /> Veloterra-Server nicht gefunden
       </h2>
       <p className="muted small">
-        Der Admin-Bereich mit Anmeldung, seitenweiten Einstellungen und vorab geladenen GPS-Spuren braucht den Dienst{' '}
+        Anmeldung, Konten mit Sync, seitenweite Einstellungen und vorab geladene GPS-Spuren brauchen den Dienst{' '}
         <code>veloterra-api</code> aus <code>docker-compose.yml</code>. Ohne ihn läuft Veloterra wie bisher nur im
         Browser; den eigenen Mapillary-Token kannst du dann in der Fotoleiste eintragen.
       </p>
@@ -484,11 +447,15 @@ function NoServerCard() {
   );
 }
 
-/** Admin: nur mit Anmeldung. Zugänge, Server und GPS-Spuren gelten für alle Besucher. */
+/**
+ * Login-Bereich: Anmeldung für alle, angemeldet Konto und Sync. Admins sehen
+ * darunter die Verwaltung (Zugänge, Server, Konten, GPS-Spuren für alle).
+ */
 export function AdminPanel({ bounds }: { bounds: () => Bbox | null }) {
   const available = useSite((s) => s.available);
   const admin = useSite((s) => s.admin);
   const config = useSite((s) => s.config);
+  const user = useSite((s) => s.user);
   const [draft, setDraft] = useState(config.mapillaryToken);
   const [show, setShow] = useState(false);
   const [check, setCheck] = useState<Check>({ state: 'idle' });
@@ -504,7 +471,20 @@ export function AdminPanel({ bounds }: { bounds: () => Bbox | null }) {
         <BackupCard />
       </>
     );
-  if (!admin) return <LoginCard />;
+  if (!user)
+    return (
+      <>
+        <LoginCard />
+        <BackupCard />
+      </>
+    );
+  if (!admin)
+    return (
+      <>
+        <AccountCard />
+        <BackupCard />
+      </>
+    );
 
   const runTest = async () => {
     setCheck({ state: 'busy', text: 'Prüfe Token …' });
@@ -525,14 +505,8 @@ export function AdminPanel({ bounds }: { bounds: () => Bbox | null }) {
 
   return (
     <>
-      <div className="admin-session">
-        <span>
-          <Icon name="check" size={14} /> Angemeldet
-        </span>
-        <button className="mini ghost" onClick={() => logout()}>
-          Abmelden
-        </button>
-      </div>
+      <AccountCard />
+      <h2 className="area-section">Verwaltung</h2>
       <section className="card admin-card">
         <h2 className="card-title">
           <Icon name="key" size={16} /> Zugänge
@@ -623,6 +597,7 @@ export function AdminPanel({ bounds }: { bounds: () => Bbox | null }) {
         />
       </section>
 
+      <UsersCard />
       <TracesCard bounds={bounds} />
       <BackupCard />
     </>
