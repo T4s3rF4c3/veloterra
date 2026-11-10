@@ -16,6 +16,8 @@ const HILLS = {
   ignore: { uphillcost: 0, uphillcutoff: 1.5 },
   moderate: { uphillcost: 40, uphillcutoff: 2 },
   strong: { uphillcost: 100, uphillcutoff: 1.5 },
+  // Rundtour „möglichst wenig Höhenmeter“: schon sanfte Steigungen kosten viel
+  max: { uphillcost: 250, uphillcutoff: 0.8 },
 } as const;
 
 /** Fahrphysik je Radtyp – bestimmt die geschätzte Fahrzeit. */

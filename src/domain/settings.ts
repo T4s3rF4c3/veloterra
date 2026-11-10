@@ -82,7 +82,8 @@ export const BIKE_TYPES: { key: BikeType; label: string }[] = [
 export type TrailLevel = 'none' | '0' | '1' | '2' | '3';
 
 export type TrafficLevel = 0 | 0.3 | 1;
-export type HillLevel = 'ignore' | 'moderate' | 'strong';
+/** 'max' nur intern für Rundtouren mit „möglichst wenig Höhenmeter“ */
+export type HillLevel = 'ignore' | 'moderate' | 'strong' | 'max';
 export type SpeedLimit = 'off' | '70' | '50';
 
 export interface RoutingSettings {

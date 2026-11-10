@@ -3453,3 +3453,12 @@ input.field:focus {
     animation: none;
   }
 }
+
+/* Rundtour über dem Höhenmeter-Limit: sichtbar, aber zurückgenommen */
+.suggestions li.over {
+  opacity: 0.6;
+}
+.suggestions li.over:hover,
+.suggestions li.over.on {
+  opacity: 1;
+}

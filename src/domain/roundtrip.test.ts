@@ -8,11 +8,12 @@ import {
   legCountFor,
   overlapRatio,
   rateRoundTrip,
+  roundTripSettings,
   sortSuggestions,
   splitIntoLegs,
   type RoundTripStats,
 } from './roundtrip';
-import { DEFAULT_SETTINGS, cloneSettings } from './settings';
+import { DEFAULT_SETTINGS, PRESETS, cloneSettings } from './settings';
 
 const loop = parseBRouter(fixture as never);
 
@@ -175,5 +176,32 @@ describe('Stichstraßen', () => {
       time: 500,
     };
     expect(removeSpurs(leg)).toBe(leg);
+  });
+});
+
+describe('Rundtour: Höhenmeter', () => {
+  const stats = (ascend: number, score = 80) => ({
+    stats: { length: 50000, ascend, quality: 1, overlap: 0, paved: 1, unpaved: 0, score },
+  });
+
+  it('„möglichst wenig“ verschärft die Steigungs-Strafe, „gern viel“ nimmt sie weg', () => {
+    const base = PRESETS[0].settings;
+    expect(roundTripSettings(base, 'low', 0).hills).toBe('max');
+    expect(roundTripSettings({ ...base, hills: 'strong' }, 'high', 0).hills).toBe('ignore');
+    expect(roundTripSettings({ ...base, hills: 'ignore' }, 'any', 500).hills).toBe('strong');
+    expect(roundTripSettings(base, 'any', 0)).toBe(base);
+  });
+
+  it('probiert mit Höhenmeter-Wunsch mehr Richtungen', () => {
+    expect(candidateDirections('any', true)).toHaveLength(8);
+    expect(candidateDirections(90, true)).toEqual([40, 65, 90, 115, 140]);
+    expect(candidateDirections(90)).toEqual([55, 90, 125]);
+  });
+
+  it('Runden über dem Limit stehen hinten, sonst die flachste vorn', () => {
+    const list = [stats(900), stats(400), stats(600), stats(300, 20)];
+    const sorted = sortSuggestions(list, 'flat', 650).map((s) => s.stats.ascend);
+    // 300 hm ist zwar flach, aber ungeeignet (Score 20) → hinter den passenden
+    expect(sorted).toEqual([400, 600, 300, 900]);
   });
 });

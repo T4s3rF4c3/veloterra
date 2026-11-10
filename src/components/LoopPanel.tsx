@@ -5,8 +5,10 @@ import { usePace } from '../hooks/usePace';
 import {
   DIRECTIONS,
   SUGGESTION_COLORS,
+  ascendPerKm,
   rateRoundTrip,
   sortSuggestions,
+  type Climb,
   type Direction,
   type Ranking,
 } from '../domain/roundtrip';
@@ -27,6 +29,20 @@ const RANKINGS: { value: Ranking; label: string }[] = [
   { value: 'wind', label: 'Rückenwind heim' },
   { value: 'novel', label: 'Neue Straßen' },
 ];
+
+const CLIMBS: { value: Climb; label: string; hint: string; ranking: Ranking }[] = [
+  { value: 'any', label: 'Egal', hint: 'Höhenmeter wie im Routing-Profil eingestellt', ranking: 'quality' },
+  {
+    value: 'low',
+    label: 'Möglichst wenig',
+    hint: 'Steigungen kosten bei der Suche viel, mehr Richtungen werden ausprobiert – die flachsten zuerst',
+    ranking: 'flat',
+  },
+  { value: 'high', label: 'Gern viel', hint: 'Bergige Runden zuerst', ranking: 'hilly' },
+];
+
+/** Schieberegler: ganz rechts = ohne Grenze */
+const LIMIT_OFF = 3050;
 
 function ScoreBadge({ score }: { score: number }) {
   const cls = score >= 75 ? 'good' : score >= 50 ? 'ok' : 'bad';
@@ -56,6 +72,8 @@ export function LoopPanel({
   const departure = departureTime(useStore((s) => s.departure));
   const st = useStore.getState;
   const { generate, cancel, apply, progress, error } = useRoundTrip();
+  const climb = options.climb ?? 'any';
+  const maxAscend = options.maxAscend ?? 0;
 
   // Farben bleiben an der Reihenfolge des Eintreffens, Sortierung nur in der Liste
   const rated = useMemo(
@@ -73,8 +91,9 @@ export function LoopPanel({
           return { ...s, color: SUGGESTION_COLORS[i % SUGGESTION_COLORS.length], stats };
         }),
         options.ranking,
+        maxAscend,
       ),
-    [suggestions, settings, options.distance, options.ranking, wind.forecast, departure, heat],
+    [suggestions, settings, options.distance, options.ranking, maxAscend, wind.forecast, departure, heat],
   );
 
   // Karte auf alle Vorschläge ausrichten, sobald neue eintreffen
@@ -121,6 +140,53 @@ export function LoopPanel({
         <span>150</span>
         <span>200 km</span>
       </div>
+
+      <label className="opt-label">Höhenmeter</label>
+      <div className="choice">
+        {CLIMBS.map((c) => (
+          <button
+            key={c.value}
+            className={climb === c.value ? 'on' : ''}
+            title={c.hint}
+            onClick={() => st().setLoopOptions({ climb: c.value, ranking: c.ranking })}
+          >
+            {c.label}
+          </button>
+        ))}
+      </div>
+      <label className="opt-label">
+        Höchstens <b className="val">{maxAscend ? `${maxAscend} hm` : 'ohne Grenze'}</b>
+        {maxAscend > 0 && (
+          <small className="muted"> · Ø {Math.round(maxAscend / (options.distance / 1000))} hm/km</small>
+        )}
+      </label>
+      <input
+        type="range"
+        className="range"
+        min={100}
+        max={LIMIT_OFF}
+        step={50}
+        value={maxAscend || LIMIT_OFF}
+        aria-label="Höchstens Höhenmeter"
+        onChange={(e) => {
+          const v = Number(e.target.value);
+          st().setLoopOptions({ maxAscend: v >= LIMIT_OFF ? 0 : v });
+        }}
+      />
+      <div className="range-scale">
+        <span>100</span>
+        <span>1000</span>
+        <span>2000</span>
+        <span>ohne</span>
+      </div>
+      {(climb === 'low' || maxAscend > 0) && (
+        <p className="muted small">
+          {climb === 'low'
+            ? 'Steigungen kosten bei der Suche viel, und es werden mehr Richtungen ausprobiert.'
+            : 'Mit Limit sucht Veloterra flacher und probiert mehr Richtungen aus.'}
+          {maxAscend > 0 && ' Runden über dem Limit stehen hinten und sind markiert.'}
+        </p>
+      )}
 
       <div className="loop-row">
         <div>
@@ -188,7 +254,7 @@ export function LoopPanel({
           {rated.map((s) => (
             <li
               key={s.id}
-              className={active === s.id ? 'on' : ''}
+              className={`${active === s.id ? 'on' : ''} ${maxAscend > 0 && s.stats.ascend > maxAscend ? 'over' : ''}`}
               onMouseEnter={() => st().setActiveSuggestion(s.id)}
               onClick={() => {
                 st().setActiveSuggestion(s.id);
@@ -199,7 +265,7 @@ export function LoopPanel({
               <div className="sugg-main">
                 <div className="sugg-head">
                   <b>{formatKm(s.stats.length)}</b>
-                  <span>{Math.round(s.stats.ascend)} hm</span>
+                  <span title={`Ø ${Math.round(ascendPerKm(s.stats))} hm je km`}>{Math.round(s.stats.ascend)} hm</span>
                   <span>
                     {formatDuration(
                       pace ? estimateTime(cumulativeDistances(s.leg.coords), s.leg.ele, pace) : s.leg.time,
@@ -212,6 +278,9 @@ export function LoopPanel({
                     <span>{Math.round(s.stats.unpaved * 100)}% Schotter & Trail</span>
                   ) : (
                     <span>{Math.round(s.stats.paved * 100)}% Asphalt</span>
+                  )}
+                  {maxAscend > 0 && s.stats.ascend > maxAscend && (
+                    <span className="warn">+{Math.round(s.stats.ascend - maxAscend)} hm über Limit</span>
                   )}
                   <span>Richtung {DIRECTIONS[Math.round(s.direction / 45) % 8].label}</span>
                   {s.stats.overlap > 0.08 && <span className="warn">{Math.round(s.stats.overlap * 100)}% doppelt</span>}
@@ -240,6 +309,11 @@ export function LoopPanel({
             </li>
           ))}
         </ul>
+      )}
+      {rated.length > 0 && !progress && maxAscend > 0 && rated.every((s) => s.stats.ascend > maxAscend) && (
+        <p className="small warn-text">
+          Keine Runde bleibt unter {maxAscend} hm. Limit erhöhen, kürzer planen oder eine andere Richtung probieren.
+        </p>
       )}
       {rated.length > 0 && !progress && (
         <p className="muted small">

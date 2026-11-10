@@ -7,6 +7,7 @@ import {
   isSimilar,
   legCountFor,
   removeSpurs,
+  roundTripSettings,
   splitIntoLegs,
 } from '../domain/roundtrip';
 import { uid, useStore, type Suggestion } from '../store';
@@ -35,11 +36,14 @@ export function useRoundTrip() {
     const abort = new AbortController();
     ctrl.current = abort;
 
-    const { distance, direction } = st.loopOptions;
-    const dirs = candidateDirections(direction);
+    const { distance, direction, climb = 'any', maxAscend = 0 } = st.loopOptions;
+    const dirs = candidateDirections(direction, climb !== 'any' || maxAscend > 0);
     const nogos = globalNogos(st.blocks);
-    const settings = st.settings;
-    basis.current = JSON.stringify([settings, nogos]);
+    // Höhenmeter-Wunsch fließt in die Steigungs-Strafe von BRouter ein
+    const settings = roundTripSettings(st.settings, climb, maxAscend);
+    // Vergleichsbasis sind die eigenen Einstellungen: Die gefundene Runde wird exakt übernommen,
+    // auch wenn die Suche mit stärkerer Steigungs-Strafe lief
+    basis.current = JSON.stringify([st.settings, nogos]);
     const found: Suggestion[] = [];
     let failures = 0;
     setError(null);

@@ -5,7 +5,7 @@ import { legKey, type Block, type LegOverride, type LegResult, type Waypoint } f
 import type { Photo } from './api/photos';
 import type { NetworkGroup, NetworkKind, NetRoute } from './api/waymarked';
 import type { DestinationSort, Poi } from './domain/poi';
-import type { Direction, Ranking } from './domain/roundtrip';
+import type { Climb, Direction, Ranking } from './domain/roundtrip';
 import { DEFAULT_SETTINGS, cloneSettings, type RoutingSettings } from './domain/settings';
 
 export type ColorMode = 'surface' | 'road' | 'grade' | 'wind' | 'novelty' | 'plain';
@@ -26,6 +26,10 @@ export interface LoopOptions {
   distance: number;
   direction: Direction;
   ranking: Ranking;
+  /** Höhenmeter: egal, möglichst wenig oder gern viel */
+  climb: Climb;
+  /** höchstens so viele Höhenmeter (0 = ohne Grenze) */
+  maxAscend: number;
 }
 
 export interface Suggestion {
@@ -217,7 +221,7 @@ export const useStore = create<State>()(
       area: 'plan',
       discoverMode: 'loop',
       loopStart: null,
-      loopOptions: { distance: 60000, direction: 'any', ranking: 'quality' },
+      loopOptions: { distance: 60000, direction: 'any', ranking: 'quality', climb: 'any', maxAscend: 0 },
       exploreOptions: {
         distance: 25000,
         categories: ['view', 'peak', 'castle', 'lake', 'cafe', 'bike'],
@@ -463,6 +467,8 @@ export const useStore = create<State>()(
       merge: (persisted, current) => ({
         ...current,
         ...(persisted as Partial<State>),
+        // neue Rundtour-Optionen in älteren Browsern ergänzen
+        loopOptions: { ...current.loopOptions, ...(persisted as Partial<State>).loopOptions },
         basemap: current.basemap,
       }),
       partialize: (s) => ({

@@ -10,6 +10,7 @@ export const SUGGESTION_COLORS = ['#4dabf7', '#f783ac', '#63e6be', '#ffa94d', '#
 
 export type Direction = number | 'any';
 export type Ranking = 'quality' | 'flat' | 'hilly' | 'wind' | 'novel';
+export type Climb = 'any' | 'low' | 'high';
 
 export const DIRECTIONS: { label: string; deg: number }[] = [
   { label: 'N', deg: 0 },
@@ -22,10 +23,24 @@ export const DIRECTIONS: { label: string; deg: number }[] = [
   { label: 'NW', deg: 315 },
 ];
 
-/** Welche Richtungen werden für eine Anfrage ausprobiert. */
-export function candidateDirections(dir: Direction): number[] {
-  if (dir === 'any') return [0, 60, 120, 180, 240, 300];
-  return [dir - 35, dir, dir + 35].map((d) => (d + 360) % 360);
+/**
+ * Welche Richtungen werden für eine Anfrage ausprobiert. Mit Höhenmeter-
+ * Wunsch mehr, damit genug flache (bzw. bergige) Runden dabei sind.
+ */
+export function candidateDirections(dir: Direction, more = false): number[] {
+  if (dir === 'any') return more ? [0, 45, 90, 135, 180, 225, 270, 315] : [0, 60, 120, 180, 240, 300];
+  return (more ? [-50, -25, 0, 25, 50] : [-35, 0, 35]).map((d) => (dir + d + 360) % 360);
+}
+
+/**
+ * Einstellungen für die Rundtour-Suche: „möglichst wenig“ oder ein Limit
+ * verschärft die Steigungs-Strafe von BRouter, „gern viel“ lässt sie weg.
+ */
+export function roundTripSettings(s: RoutingSettings, climb: Climb, maxAscend: number): RoutingSettings {
+  if (climb === 'low') return { ...s, hills: 'max' };
+  if (climb === 'high') return { ...s, hills: 'ignore' };
+  if (maxAscend > 0 && (s.hills === 'ignore' || s.hills === 'moderate')) return { ...s, hills: 'strong' };
+  return s;
 }
 
 const PREF_SCORE: Record<Pref, number> = { prefer: 1, neutral: 0.7, avoid: 0.3, forbid: 0 };
@@ -102,11 +117,17 @@ export function rateRoundTrip(leg: LegResult, settings: RoutingSettings, target:
   };
 }
 
-export function sortSuggestions<T extends { stats: RoundTripStats }>(list: T[], ranking: Ranking): T[] {
-  const perKm = (s: RoundTripStats) => s.ascend / Math.max(1, s.length / 1000);
-  // ungeeignete Vorschläge (viel doppelt / schlechte Straßen) immer nach hinten
+/** Höhenmeter je km */
+export const ascendPerKm = (s: { ascend: number; length: number }) => s.ascend / Math.max(1, s.length / 1000);
+
+export function sortSuggestions<T extends { stats: RoundTripStats }>(list: T[], ranking: Ranking, maxAscend = 0): T[] {
+  const perKm = ascendPerKm;
+  // über dem Höhenmeter-Limit, dann ungeeignete Vorschläge (viel doppelt / schlechte Straßen) nach hinten
+  const over = (s: RoundTripStats) => (maxAscend > 0 && s.ascend > maxAscend ? 1 : 0);
   const usable = (s: RoundTripStats) => (s.score >= 35 ? 0 : 1);
   return [...list].sort((a, b) => {
+    const o = over(a.stats) - over(b.stats);
+    if (o) return o;
     const u = usable(a.stats) - usable(b.stats);
     if (u) return u;
     if (ranking === 'flat') return perKm(a.stats) - perKm(b.stats);

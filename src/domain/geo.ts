@@ -163,7 +163,9 @@ export function formatKmExact(m: number): string {
 }
 
 export function formatDuration(s: number): string {
-  const h = Math.floor(s / 3600);
-  const m = Math.round((s % 3600) / 60);
+  // erst auf Minuten runden – sonst entsteht „1:60 h“
+  const total = Math.round(s / 60);
+  const h = Math.floor(total / 60);
+  const m = total % 60;
   return h > 0 ? `${h}:${String(m).padStart(2, '0')} h` : `${m} min`;
 }
