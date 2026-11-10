@@ -13,7 +13,7 @@ import { useImport } from '../hooks/useImport';
 import type { LegStatus } from '../hooks/useRouting';
 import { usePace } from '../hooks/usePace';
 import { departureTime, useRouteWeather } from '../hooks/useWind';
-import { useStore, type Area, type Mode } from '../store';
+import { useStore, type Area, type Mode, type Sheet } from '../store';
 import { SyncHint } from './Account';
 import { useSite } from '../api/site';
 import { AdminPanel } from './AdminPanel';
@@ -375,6 +375,73 @@ function WaypointList({ route, fly }: { route: CombinedRoute | null; fly: (c: Ln
   );
 }
 
+/** Haltepunkte des Blatts (Handy) in Pixeln, passend zu den Höhen im CSS */
+function sheetSnaps() {
+  const h = document.querySelector('.app')?.clientHeight ?? window.innerHeight;
+  return { peek: 184, half: h * 0.5, full: h - 120 };
+}
+
+/**
+ * Griff oben am Blatt (nur Handy): ziehen ändert die Höhe und rastet bei
+ * eingeklappt, halb oder ganz offen ein; Antippen wechselt eingeklappt ↔ halb.
+ */
+function SheetHandle() {
+  const sheet = useStore((s) => s.sheet);
+  const drag = useRef<{ y: number; h: number; moved: boolean } | null>(null);
+  const aside = () => document.querySelector('.sidebar') as HTMLElement | null;
+  const set = (v: Sheet) => useStore.getState().setSheet(v);
+  const finish = (clientY: number | null) => {
+    const d = drag.current;
+    const el = aside();
+    drag.current = null;
+    if (!d || !el) return;
+    el.classList.remove('dragging');
+    el.style.height = '';
+    if (clientY === null) return;
+    if (!d.moved) return set(sheet === 'peek' ? 'half' : 'peek');
+    const h = d.h + (d.y - clientY);
+    const snaps = sheetSnaps();
+    const best = (Object.entries(snaps) as [Sheet, number][]).reduce((a, b) =>
+      Math.abs(b[1] - h) < Math.abs(a[1] - h) ? b : a,
+    );
+    set(best[0]);
+  };
+  return (
+    <div
+      className="sheet-handle"
+      role="button"
+      tabIndex={0}
+      aria-label={sheet === 'peek' ? 'Blatt öffnen' : 'Blatt einklappen'}
+      onPointerDown={(e) => {
+        const el = aside();
+        if (!el) return;
+        (e.target as Element).setPointerCapture?.(e.pointerId);
+        drag.current = { y: e.clientY, h: el.getBoundingClientRect().height, moved: false };
+        el.classList.add('dragging');
+      }}
+      onPointerMove={(e) => {
+        const d = drag.current;
+        const el = aside();
+        if (!d || !el) return;
+        const dy = d.y - e.clientY;
+        if (Math.abs(dy) > 6) d.moved = true;
+        const { peek, full } = sheetSnaps();
+        el.style.height = `${Math.max(peek - 40, Math.min(full, d.h + dy))}px`;
+      }}
+      onPointerUp={(e) => finish(e.clientY)}
+      onPointerCancel={() => finish(null)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          set(sheet === 'peek' ? 'half' : sheet === 'half' ? 'full' : 'peek');
+        }
+      }}
+    >
+      <span aria-hidden />
+    </div>
+  );
+}
+
 /** Radtyp und Profil – immer sichtbar, ein Klick führt in die Einstellungen. */
 function ProfilePill() {
   const settings = useStore((s) => s.settings);
@@ -451,7 +518,11 @@ export function Sidebar({
             <button
               key={a.value}
               className={`${area === a.value ? 'on' : ''} ${a.value === 'mine' ? 'rail-end' : ''}`}
-              onClick={() => st().setArea(a.value)}
+              onClick={() => {
+                st().setArea(a.value);
+                // Handy: eingeklapptes Blatt öffnet sich beim Bereichswechsel
+                if (st().sheet === 'peek') st().setSheet('half');
+              }}
               title={account ? `Angemeldet als ${user.name} – Konto und Sync` : a.hint}
               aria-current={area === a.value ? 'page' : undefined}
             >
@@ -471,10 +542,20 @@ export function Sidebar({
       </nav>
 
       <div className="pane">
+        <SheetHandle />
         <header className="pane-head">
           <h1>{area === 'admin' && user ? 'Konto' : AREA_TITLE[area]}</h1>
           {area !== 'profile' && area !== 'admin' && <ProfilePill />}
         </header>
+        {/* Handy, Blatt eingeklappt: das Wichtigste in einer Zeile */}
+        {area === 'plan' && route && (
+          <button className="peek-line" onClick={() => st().setSheet('half')} title="Blatt öffnen">
+            <b>{formatKmExact(total)} km</b>
+            <span>{Math.round(route.ascend)} hm</span>
+            <span>{formatDuration(route.time)}</span>
+            {weather.points && <span className="muted">{weatherSummary(weather.points)}</span>}
+          </button>
+        )}
 
         {/* ===== Planen ===== */}
         {area === 'plan' && (

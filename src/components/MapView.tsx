@@ -1245,7 +1245,17 @@ export function MapView({ route, stale, pieces, uncertain, checkLine = null, onM
         attribution: 'Niederschlag © Deutscher Wetterdienst',
       });
       map.addLayer(
-        { id: 'radar', type: 'raster', source: 'radar', paint: { 'raster-fade-duration': 0 } },
+        {
+          id: 'radar',
+          type: 'raster',
+          source: 'radar',
+          paint: {
+            'raster-fade-duration': 0,
+            // Radar hat 1-km-Raster: nah dran weich zeichnen und blasser, damit die Karte sichtbar bleibt
+            'raster-resampling': 'linear',
+            'raster-opacity': ['interpolate', ['linear'], ['zoom'], 9, 0.9, 11, 0.5, 14, 0.3],
+          },
+        },
         map.getLayer('route-casing') ? 'route-casing' : undefined,
       );
     }

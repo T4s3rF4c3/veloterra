@@ -19,6 +19,9 @@ export interface Selection {
 
 export type Mode = 'route' | 'loop' | 'explore' | 'network';
 
+/** Handy: Seitenleiste als Blatt – eingeklappt, halb oder ganz offen */
+export type Sheet = 'peek' | 'half' | 'full';
+
 /** Bereich der Seitenleiste */
 export type Area = 'plan' | 'discover' | 'mine' | 'profile' | 'admin';
 
@@ -101,6 +104,10 @@ interface State {
   networkGroups: NetworkGroup[];
   stopCategories: string[];
   showPhotos: boolean;
+  /** Fotoleiste aufgeklappt (eingeklappt nur die Kopfzeile) */
+  photosOpen: boolean;
+  /** Legende der Einfärbung oben auf der Karte aufgeklappt */
+  legendOpen: boolean;
   /** Fotoleiste: Straßenfotos (Belag) oder schöne Fotos (Wikimedia Commons) */
   photoSource: 'street' | 'commons';
   mapillaryToken: string;
@@ -114,6 +121,8 @@ interface State {
   checkedSurfaces: string[];
 
   // flüchtiger Zustand
+  /** Handy: Höhe des Blatts mit der Seitenleiste */
+  sheet: Sheet;
   /** Abfahrtszeit für die Windvorhersage (null = jetzt) */
   departure: number | null;
   /** Original-Track eines GPX-Imports zum Vergleich */
@@ -171,6 +180,8 @@ interface State {
   setStopCategories: (c: string[]) => void;
   setShowPhotos: (v: boolean) => void;
   setPhotoSource: (v: 'street' | 'commons') => void;
+  setPhotosOpen: (v: boolean) => void;
+  setLegendOpen: (v: boolean) => void;
   setMapillaryToken: (t: string) => void;
   setShowRadar: (v: boolean) => void;
   setDeparture: (t: number | null) => void;
@@ -195,6 +206,7 @@ interface State {
   setActiveNetwork: (id: number | null, lines?: LngLat[][]) => void;
   resetCheckedSurfaces: () => void;
   setActiveCheck: (id: string | null) => void;
+  setSheet: (sheet: Sheet) => void;
   /** aktuelle Route in der Bibliothek speichern (überschreibt, wenn schon gespeichert) */
   saveRoute: (stats: { length: number; ascend: number }, asNew?: boolean) => void;
   loadRoute: (id: string) => void;
@@ -249,6 +261,9 @@ export const useStore = create<State>()(
       stopCategories: ['cafe', 'water', 'bike'],
       showPhotos: true,
       photoSource: 'commons',
+      // am Handy ist wenig Platz: dort startet die Fotoleiste eingeklappt
+      photosOpen: typeof window === 'undefined' || !window.matchMedia?.('(max-width: 760px)').matches,
+      legendOpen: false,
       mapillaryToken: '',
       showRadar: true,
       library: [],
@@ -256,6 +271,7 @@ export const useStore = create<State>()(
       savedId: null,
       checkedSurfaces: [],
       activeCheck: null,
+      sheet: 'half',
       departure: null,
       importTrack: null,
       stops: [],
@@ -391,6 +407,8 @@ export const useStore = create<State>()(
       setStopCategories: (stopCategories) => set({ stopCategories }),
       setShowPhotos: (showPhotos) => set({ showPhotos }),
       setPhotoSource: (photoSource) => set({ photoSource, photos: [], activePhoto: null }),
+      setPhotosOpen: (photosOpen) => set({ photosOpen }),
+      setLegendOpen: (legendOpen) => set({ legendOpen }),
       setMapillaryToken: (mapillaryToken) => set({ mapillaryToken: mapillaryToken.trim() }),
       setShowRadar: (showRadar) => set({ showRadar }),
       setDeparture: (departure) => set({ departure }),
@@ -416,6 +434,7 @@ export const useStore = create<State>()(
       setNetworkRoutes: (networkRoutes) => set({ networkRoutes }),
       setActiveNetwork: (activeNetwork, networkLines = []) => set({ activeNetwork, networkLines }),
       setActiveCheck: (activeCheck) => set({ activeCheck }),
+      setSheet: (sheet) => set({ sheet }),
       saveRoute: (stats, asNew = false) =>
         set((s) => {
           const id = !asNew && s.savedId && s.library.some((r) => r.id === s.savedId) ? s.savedId : uid();
@@ -511,6 +530,8 @@ export const useStore = create<State>()(
         stopCategories: s.stopCategories,
         showPhotos: s.showPhotos,
         photoSource: s.photoSource,
+        photosOpen: s.photosOpen,
+        legendOpen: s.legendOpen,
         mapillaryToken: s.mapillaryToken,
         showRadar: s.showRadar,
         library: s.library,

@@ -25,7 +25,7 @@ Die Seitenleiste hat fünf Bereiche (Leiste links, auf dem Handy oben):
 | **Meine** (unten) | Gespeicherte Routen, eigene Heatmap und dein Tempo, „Als App installieren“ |
 | **Login** (unten) | Anmelden für alle (Veloterra-Server); angemeldet heißt der Knopf **Konto**: Sync-Status, Passwort ändern, Abmelden. Admins sehen darunter die **Verwaltung**: Konten, Mapillary-Token und BRouter-/Overpass-Server für alle Besucher, GPS-Spuren einer Region für alle. Angemeldet außerdem die Datensicherung als Datei (ohne Anmeldung kein Export) |
 
-Der aktuelle Radtyp steht oben rechts immer sichtbar; ein Klick öffnet das Profil. Die Karte startet immer mit **Luftbild DE**. Oben links auf der Karte: **↶ ↷** (Rückgängig/Wiederholen), **Ebenen** (Kartenstil, Einfärbung, Stopps, Fotos, Radrouten-Netz, Heatmaps) und **Route ausblenden**.
+Der aktuelle Radtyp steht oben rechts immer sichtbar; ein Klick öffnet das Profil. Die **Legende** der Einfärbung ist oben auf der Karte ein kleiner Knopf mit Farbpunkten und klappt bei Bedarf auf; die **Fotoleiste** lässt sich auf eine Zeile einklappen. **Am Handy** ist die Seitenleiste ein Blatt mit Griff: ziehen oder antippen – eingeklappt (nur Kennzahlen, große Karte), halb oder ganz offen. Die Karte startet immer mit **Luftbild DE**. Oben links auf der Karte: **↶ ↷** (Rückgängig/Wiederholen), **Ebenen** (Kartenstil, Einfärbung, Stopps, Fotos, Radrouten-Netz, Heatmaps) und **Route ausblenden**.
 
 | Aktion | So geht's |
 |---|---|

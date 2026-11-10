@@ -32,6 +32,7 @@ const PATHS = {
   plus: <path d="M12 5v14M5 12h14" />,
   check: <path d="m5 12.5 4.5 4.5L19 7" />,
   'chevron-down': <path d="m6 9 6 6 6-6" />,
+  'chevron-up': <path d="m6 15 6-6 6 6" />,
   'chevron-left': <path d="m15 6-6 6 6 6" />,
   'chevron-right': <path d="m9 6 6 6-6 6" />,
   'arrow-right': <path d="M5 12h14m-6-6 6 6-6 6" />,

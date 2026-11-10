@@ -142,7 +142,8 @@ export function DensityLegend() {
   const filter = useStore((s) => s.gpsFilter);
   const stored = useTraces((s) => Object.keys(s.cells).length);
   const loading = useTraces((s) => s.loading);
-  if (!show) return null;
+  // ohne geladene Spuren keine Legende – „Bereich laden“ steht im Ebenen-Menü
+  if (!show || (!stored && !loading)) return null;
   return (
     <div className="density-legend">
       <b>Rad-Spuren {filter === 'fast' ? '(Rennrad-Tempo)' : ''}</b>

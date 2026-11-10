@@ -24,6 +24,16 @@ import { useStore } from './store';
 import { Icon } from './components/Icon';
 import { SURFACE_CLASS, type SurfaceCat } from './domain/settings';
 
+/** Name der Einfärbung im Legenden-Knopf */
+const COLOR_LABEL: Record<string, string> = {
+  surface: 'Belag',
+  road: 'Straßenart',
+  grade: 'Steigung',
+  wind: 'Wind',
+  novelty: 'Neu für dich',
+  plain: 'Route',
+};
+
 export default function App() {
   const { route: planned, stale, legs, loading, errors, retry } = useRouting();
   // Fahrzeit nach dem eigenen Tempo (wirkt auch auf Wind, Wetter und GPX-Zeiten)
@@ -42,6 +52,8 @@ export default function App() {
   const waypoints = useStore((s) => s.waypoints);
   const loopStart = useStore((s) => s.loopStart);
   const [panelOpen, setPanelOpen] = useState(true);
+  const sheet = useStore((s) => s.sheet);
+  const legendOpen = useStore((s) => s.legendOpen);
   const notice = useHistory((s) => s.notice);
   const hasAvoids = useStore((s) => Object.values(s.overrides).some((o) => o.avoid?.length));
 
@@ -126,7 +138,7 @@ export default function App() {
   }, []);
 
   return (
-    <div className={`app ${panelOpen ? '' : 'panel-closed'}`}>
+    <div className={`app ${panelOpen ? '' : 'panel-closed'} sheet-${sheet}`}>
       <Sidebar
         route={route}
         legs={legs}
@@ -164,7 +176,27 @@ export default function App() {
             <Icon name={panelOpen ? 'chevron-left' : 'chevron-right'} size={18} />
           </button>
           <MapToolbar hasRoute={!!route} bounds={() => mapApi.current?.bounds() ?? null} />
-          {mode === 'route' && route && coloring.legend.length > 0 && (
+          {mode === 'route' && route && coloring.legend.length > 0 && !legendOpen && (
+            <button
+              className="map-legend legend-pill"
+              onClick={() => useStore.getState().setLegendOpen(true)}
+              aria-expanded={false}
+              title="Legende der Einfärbung zeigen"
+            >
+              <span className="legend-dots" aria-hidden>
+                {legendItems.slice(0, 6).map((c) => (
+                  <i
+                    key={c.key}
+                    className={c.key === 'unknown' ? 'hatch' : undefined}
+                    style={c.key === 'unknown' ? undefined : { backgroundColor: c.color }}
+                  />
+                ))}
+              </span>
+              Legende · {COLOR_LABEL[colorMode]}
+              <Icon name="chevron-down" size={14} />
+            </button>
+          )}
+          {mode === 'route' && route && coloring.legend.length > 0 && legendOpen && (
             <div className="map-legend">
               {legendItems.map((c) => (
                 <span key={c.key}>
@@ -204,6 +236,15 @@ export default function App() {
                   umfahren
                 </span>
               )}
+              <button
+                className="mini ghost legend-close"
+                onClick={() => useStore.getState().setLegendOpen(false)}
+                aria-label="Legende einklappen"
+                aria-expanded
+                title="Legende einklappen"
+              >
+                <Icon name="chevron-up" size={14} />
+              </button>
             </div>
           )}
           {mode === 'route' && route && colorMode === 'wind' && !wind.forecast && (

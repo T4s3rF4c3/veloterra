@@ -14,6 +14,7 @@ export function PhotoStrip({ route }: { route: CombinedRoute }) {
   const siteToken = useSite((s) => s.config.mapillaryToken);
   const token = useStore((s) => s.mapillaryToken) || siteToken;
   const source = useStore((s) => s.photoSource);
+  const open = useStore((s) => s.photosOpen);
   const st = useStore.getState;
   const [showToken, setShowToken] = useState(false);
   const [draft, setDraft] = useState(token);
@@ -36,9 +37,18 @@ export function PhotoStrip({ route }: { route: CombinedRoute }) {
   }, [active, st]);
 
   return (
-    <div className="photos">
+    <div className={`photos ${open ? '' : 'collapsed'}`}>
       <div className="photos-head">
-        <b>Fotos der Strecke</b>
+        <button
+          className="mini ghost photos-toggle"
+          onClick={() => st().setPhotosOpen(!open)}
+          aria-expanded={open}
+          title={open ? 'Fotoleiste einklappen' : 'Fotos zeigen'}
+        >
+          <Icon name={open ? 'chevron-down' : 'chevron-up'} size={16} />
+          <b>Fotos der Strecke</b>
+          {!open && photos.length > 0 && <span className="photos-count">{photos.length}</span>}
+        </button>
         <div className="choice photo-source" role="group" aria-label="Fotoquelle">
           <button
             className={source === 'commons' ? 'on' : ''}
@@ -75,7 +85,7 @@ export function PhotoStrip({ route }: { route: CombinedRoute }) {
           <Icon name="x" size={14} />
         </button>
       </div>
-      {showToken && source === 'street' && (
+      {open && showToken && source === 'street' && (
         <div className="photos-token">
           <p className="muted small">
             Mapillary hat viel mehr Fotos, auch auf dem Land. Kostenlosen Client-Token unter{' '}
@@ -98,7 +108,7 @@ export function PhotoStrip({ route }: { route: CombinedRoute }) {
           </div>
         </div>
       )}
-      {photos.length > 0 && (
+      {open && photos.length > 0 && (
         <div className="photos-row">
           {photos.map((p) => (
             <button
@@ -115,12 +125,12 @@ export function PhotoStrip({ route }: { route: CombinedRoute }) {
           ))}
         </div>
       )}
-      {!loading && !photos.length && source === 'commons' && (
+      {open && !loading && !photos.length && source === 'commons' && (
         <p className="muted small">
           Entlang dieser Strecke gibt es auf Wikimedia Commons keine passenden Fotos. „Straße“ zeigt Straßenfotos.
         </p>
       )}
-      {!loading && !photos.length && source === 'street' && !token && (
+      {open && !loading && !photos.length && source === 'street' && !token && (
         <p className="muted small">
           Panoramax hat hier noch keine Fotos. Mit einem Mapillary-Token findest du meist deutlich mehr.
         </p>
