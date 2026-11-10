@@ -3,6 +3,7 @@ import { poiDetails } from '../domain/poi';
 import type { CombinedRoute } from '../domain/route';
 import { uid, useStore } from '../store';
 import { Icon } from './Icon';
+import { PoiPhotos } from './PoiPhotos';
 
 /** Details und Aktionen zum gewählten Stopp bzw. Ziel. */
 export function PoiCard({ route, fit }: { route: CombinedRoute | null; fit: (c: [number, number][]) => void }) {
@@ -49,6 +50,7 @@ export function PoiCard({ route, fit }: { route: CombinedRoute | null; fit: (c: 
 
   return (
     <div className="poi-card">
+      <PoiPhotos poi={p} />
       <div className="poi-card-head">
         <span className="poi-icon">
           <Icon name={p.icon} size={22} />

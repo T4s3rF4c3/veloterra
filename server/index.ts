@@ -229,6 +229,19 @@ async function handleAccount(
   }
 
   // geteilte Route öffnen – ohne Anmeldung
+  const shareImg = path.match(/^\/shares\/([^/]+)\/image\.jpg$/);
+  if (m === 'GET' && shareImg) {
+    if (!VALID_SHARE_ID.test(shareImg[1])) return (send(res, 404, { error: 'Unbekannt' }), true);
+    try {
+      const img = await readFile(userData.shareImage(shareImg[1]));
+      res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Cache-Control': 'public, max-age=604800' });
+      res.end(img);
+    } catch {
+      send(res, 404, { error: 'Kein Vorschaubild' });
+    }
+    return true;
+  }
+
   const shareGet = path.match(/^\/shares\/([^/]+)$/);
   if (m === 'GET' && shareGet) {
     const data = VALID_SHARE_ID.test(shareGet[1]) ? await userData.share(shareGet[1]) : null;
@@ -241,9 +254,15 @@ async function handleAccount(
   const uid = user.id;
 
   if (m === 'POST' && path === '/shares') {
-    const { data } = await readBody(req, 4 * MB);
+    const { data, image } = await readBody(req, 6 * MB);
     if (!data || typeof data !== 'object') return (send(res, 400, { error: 'Ungültige Route' }), true);
-    return (send(res, 200, { id: await userData.createShare(uid, data) }), true);
+    // Vorschaubild (JPEG, höchstens 1,5 MB) – optional
+    let jpg: Buffer | undefined;
+    if (typeof image === 'string' && /^[A-Za-z0-9+/=]+$/.test(image)) {
+      const b = Buffer.from(image, 'base64');
+      if (b.length <= 1.5 * MB && b[0] === 0xff && b[1] === 0xd8) jpg = b;
+    }
+    return (send(res, 200, { id: await userData.createShare(uid, data, jpg) }), true);
   }
 
   if (m === 'PUT' && path === '/me/password') {
@@ -346,8 +365,61 @@ async function handleUsers(req: IncomingMessage, res: ServerResponse, m: string,
   return false;
 }
 
+const esc = (s: string) =>
+  s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+
+/**
+ * Kurzer Teilen-Link /s/<id>: eine kleine Seite mit Vorschau-Angaben (Open
+ * Graph) für Messenger und soziale Netze, die sofort zur Route weiterleitet.
+ */
+async function sharePage(req: IncomingMessage, res: ServerResponse, id: string) {
+  const data = VALID_SHARE_ID.test(id)
+    ? ((await userData.share(id)) as { meta?: { title?: string; description?: string } } | null)
+    : null;
+  const host = String(req.headers['x-forwarded-host'] || req.headers.host || '')
+    .split(',')[0]
+    .trim();
+  const proto = String(req.headers['x-forwarded-proto'] || 'http')
+    .split(',')[0]
+    .trim();
+  const base = /^[\w.:[\]-]+$/.test(host) && /^https?$/.test(proto) ? `${proto}://${host}` : '';
+  const target = data ? `/#s=${id}` : '/';
+  let hasImage = false;
+  try {
+    hasImage = !!data && (await stat(userData.shareImage(id))).isFile();
+  } catch {
+    /* ohne Bild */
+  }
+  const title = String(data?.meta?.title || 'Route').slice(0, 120);
+  const desc = String(data?.meta?.description || 'Geplant mit Veloterra – Routen nach Belag und Straßenart').slice(
+    0,
+    200,
+  );
+  const image = hasImage ? `${base}/api/shares/${id}/image.jpg` : `${base}/icon-512.png`;
+  const html = `<!doctype html>
+<html lang="de"><head><meta charset="utf-8">
+<title>${esc(title)} – Veloterra</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Veloterra">
+<meta property="og:title" content="${esc(title)}">
+<meta property="og:description" content="${esc(desc)}">
+<meta property="og:image" content="${esc(image)}">
+${hasImage ? '<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">' : ''}
+${base ? `<meta property="og:url" content="${esc(`${base}/s/${id}`)}">` : ''}
+<meta name="twitter:card" content="${hasImage ? 'summary_large_image' : 'summary'}">
+<meta http-equiv="refresh" content="0; url=${esc(target)}">
+<style>body{background:#18191b;color:#e8eaed;font:15px system-ui,sans-serif;display:grid;place-items:center;height:100vh;margin:0}a{color:#8ab4f8}</style>
+</head><body><a href="${esc(target)}">${data ? 'Route in Veloterra öffnen' : 'Diese geteilte Route gibt es nicht (mehr) – zu Veloterra'}</a>
+<script>location.replace(${JSON.stringify(target)})</script></body></html>`;
+  res.writeHead(data ? 200 : 404, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
+  res.end(html);
+}
+
 async function handle(req: IncomingMessage, res: ServerResponse) {
   const url = new URL(req.url ?? '/', 'http://localhost');
+  const short = url.pathname.match(/^\/s\/([A-Za-z0-9_-]+)\/?$/);
+  if (short && req.method === 'GET') return sharePage(req, res, short[1]);
   const path = url.pathname.replace(/^\/api/, '');
   const m = req.method ?? 'GET';
   const user = accounts.userFor(cookies(req)[COOKIE]);

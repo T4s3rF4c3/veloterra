@@ -10,7 +10,7 @@
  * Die zuletzt geplante Route liegt im Browser-Speicher der App und ist damit
  * auch offline sofort da.
  */
-const VERSION = 'v1';
+const VERSION = 'v2';
 const SHELL = `vt-shell-${VERSION}`;
 const ASSETS = `vt-assets-${VERSION}`;
 const TILES = `vt-tiles-${VERSION}`;
@@ -114,7 +114,9 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
 
   if (url.origin === self.location.origin) {
-    if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/brouter')) return;
+    // Server-Anfragen und kurze Teilen-Links (/s/<id>, Weiterleitung vom Server) nie abfangen
+    if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/brouter') || url.pathname.startsWith('/s/'))
+      return;
     if (req.mode === 'navigate') {
       // alle Seitenaufrufe teilen sich die Startseite (Teilen-Links stehen im #)
       event.respondWith(networkFirst(req, '/'));

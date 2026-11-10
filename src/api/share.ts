@@ -1,6 +1,7 @@
-import type { LngLat } from '../domain/geo';
-import type { LegResult } from '../domain/route';
-import { PRESETS, DEFAULT_SETTINGS, cloneSettings } from '../domain/settings';
+import { formatKmExact, type LngLat } from '../domain/geo';
+import type { CombinedRoute, LegResult } from '../domain/route';
+import { BIKE_TYPES, PRESETS, DEFAULT_SETTINGS, cloneSettings } from '../domain/settings';
+import { shareImage } from './routeImage';
 import { decodeShare, encodeShare, isShared, readShareHash, type SharedRoute } from '../domain/share';
 import { restoreLegs, snapshotLegs } from '../hooks/useRouting';
 import { useStore } from '../store';
@@ -25,23 +26,44 @@ export interface ShareLink {
   url: string;
   /** kurzer Link über den Veloterra-Server (inkl. exakter Etappen) */
   short: boolean;
+  /** Vorschaubild, wie es Messenger zeigen (Objekt-URL) */
+  image?: string;
 }
 
-const base = () => `${location.origin}${location.pathname}`;
+const base = () => `${location.origin}/`;
+
+const blobToBase64 = (b: Blob) =>
+  new Promise<string>((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result).split(',')[1] ?? '');
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(b);
+  });
 
 /**
  * Link erzeugen: angemeldet als kurzer Link über den Server (passt gut in
  * einen QR-Code, Etappen bleiben exakt), sonst steckt die Route im Link.
  */
-export async function createShareLink(): Promise<ShareLink> {
+export async function createShareLink(planned: CombinedRoute | null): Promise<ShareLink> {
   const route = currentShare();
   if (useSite.getState().user) {
     try {
+      const bike = BIKE_TYPES.find((b) => b.key === (useStore.getState().settings.bike ?? 'road'))?.label;
+      const km = planned ? `${formatKmExact(planned.length)} km` : '';
+      const title = route.name || (planned ? `Route ${km}` : 'Route');
+      const description = planned
+        ? [km, `${Math.round(planned.ascend)} hm`, bike].filter(Boolean).join(' · ')
+        : 'Geplant mit Veloterra';
+      // Vorschaubild für Messenger (Luftbild, Strecke, Name)
+      const img = planned ? await shareImage(planned.coords, title, description).catch(() => null) : null;
       const { id } = await api<{ id: string }>('/shares', {
         method: 'POST',
-        body: JSON.stringify({ data: { route, legs: snapshotLegs() } }),
+        body: JSON.stringify({
+          data: { route, legs: snapshotLegs(), meta: { title, description } },
+          image: img ? await blobToBase64(img) : undefined,
+        }),
       });
-      return { url: `${base()}#s=${id}`, short: true };
+      return { url: `${base()}s/${id}`, short: true, image: img ? URL.createObjectURL(img) : undefined };
     } catch {
       /* Server nicht erreichbar – dann eben der lange Link */
     }
@@ -73,7 +95,9 @@ function apply(r: SharedRoute, legs?: Record<string, LegResult> | null) {
  * zum Einpassen der Karte zurück, oder eine Fehlermeldung.
  */
 export async function openSharedFromHash(): Promise<{ coords: LngLat[] } | { error: string } | null> {
-  const h = readShareHash(location.hash);
+  // kurzer Link /s/<id> ohne Weiterleitung durch den Server (z. B. im Entwicklungsbetrieb)
+  const path = location.pathname.match(/^\/s\/([A-Za-z0-9_-]+)\/?$/);
+  const h = path ? { kind: 's' as const, value: path[1] } : readShareHash(location.hash);
   if (!h) return null;
   // Adresse aufräumen, damit Neuladen die Route nicht erneut übernimmt
   history.replaceState(null, '', base());

@@ -24,8 +24,15 @@ location /api/ {
     # Sync von Routen und Heatmap braucht größere Anfragen
     client_max_body_size 16m;
 }
+# kurze Teilen-Links mit Vorschaubild für Messenger
+location ~ ^/s/[A-Za-z0-9_-]+/?\$ {
+    proxy_pass ${api};
+    proxy_set_header Host \$host;
+    proxy_set_header X-Forwarded-Host \$http_host;
+    proxy_set_header X-Forwarded-Proto \$http_x_forwarded_proto;
+}
 NGINX
-  echo "veloterra: Admin und GPS-Spuren über /api an ${api}"
+  echo "veloterra: Konten, Admin und GPS-Spuren über /api, Teilen-Links über /s an ${api}"
 else
   echo "veloterra: ohne Veloterra-Server (Admin-Bereich nicht verfügbar)"
 fi

@@ -1,11 +1,12 @@
 import { Panel } from './Panel';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { formatKm, type LngLat } from '../domain/geo';
-import type { CombinedRoute } from '../domain/route';
+import type { CombinedRoute, LegResult } from '../domain/route';
+import { routeThumb } from '../api/routeImage';
 import { useSite } from '../api/site';
 import { fetchLegs, legsKey } from '../api/sync';
 import { restoreLegs, snapshotLegs } from '../hooks/useRouting';
-import { useStore } from '../store';
+import { useStore, type SavedRoute } from '../store';
 import { Icon } from './Icon';
 
 function save(route: CombinedRoute, asNew = false) {
@@ -17,6 +18,41 @@ function save(route: CombinedRoute, asNew = false) {
   } catch {
     /* Speicher voll – Route wird beim Laden neu berechnet */
   }
+  // Vorschaubild im Hintergrund erzeugen
+  if (id)
+    void routeThumb(route.coords)
+      .then((t) => useStore.getState().setRouteThumb(id, t))
+      .catch(() => undefined);
+}
+
+/** Strecke einer gespeicherten Route: aus den Etappen, sonst die Wegpunkte */
+async function savedCoords(r: SavedRoute): Promise<LngLat[]> {
+  const legs = (await fetchLegs(r.id)) as Record<string, LegResult> | null;
+  const out: LngLat[] = [];
+  for (let i = 0; i < r.waypoints.length - 1; i++) {
+    const leg = legs?.[`${r.waypoints[i].id}>${r.waypoints[i + 1].id}`];
+    if (!leg) return r.waypoints.map((w) => [w.lng, w.lat]);
+    out.push(...leg.coords);
+  }
+  return out;
+}
+
+/** Fehlende Vorschaubilder (ältere Routen) nach und nach erzeugen */
+const tried = new Set<string>();
+function useMissingThumbs(library: SavedRoute[]) {
+  useEffect(() => {
+    const r = library.find((x) => !x.thumb && !tried.has(x.id));
+    if (!r) return;
+    tried.add(r.id);
+    let alive = true;
+    void savedCoords(r)
+      .then(routeThumb)
+      .then((t) => alive && useStore.getState().setRouteThumb(r.id, t))
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [library]);
 }
 
 async function load(id: string) {
@@ -87,6 +123,7 @@ export function Library({ route, fit }: { route: CombinedRoute | null; fit: (c: 
   const [draft, setDraft] = useState('');
   const saved = library.find((r) => r.id === savedId);
   const user = useSite((s) => s.user);
+  useMissingThumbs(library);
 
   return (
     <Panel
@@ -130,6 +167,11 @@ export function Library({ route, fit }: { route: CombinedRoute | null; fit: (c: 
                   }}
                   title="Route laden"
                 >
+                  {r.thumb ? (
+                    <img className="lib-thumb" src={r.thumb} alt="" />
+                  ) : (
+                    <span className="lib-thumb empty" aria-hidden />
+                  )}
                   <b>{r.name}</b>
                   <small>
                     {formatKm(r.length)} · {Math.round(r.ascend)} hm · {new Date(r.savedAt).toLocaleDateString('de-DE')}

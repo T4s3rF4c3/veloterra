@@ -48,6 +48,8 @@ export interface SavedRoute {
   presetId: string | null;
   length: number;
   ascend: number;
+  /** kleines Vorschaubild (JPEG als data-URL) */
+  thumb?: string;
 }
 
 export interface ExploreOptions {
@@ -99,6 +101,8 @@ interface State {
   networkGroups: NetworkGroup[];
   stopCategories: string[];
   showPhotos: boolean;
+  /** Fotoleiste: Straßenfotos (Belag) oder schöne Fotos (Wikimedia Commons) */
+  photoSource: 'street' | 'commons';
   mapillaryToken: string;
   /** Regenradar als Kartenebene */
   showRadar: boolean;
@@ -166,6 +170,7 @@ interface State {
   setShowStops: (v: boolean) => void;
   setStopCategories: (c: string[]) => void;
   setShowPhotos: (v: boolean) => void;
+  setPhotoSource: (v: 'street' | 'commons') => void;
   setMapillaryToken: (t: string) => void;
   setShowRadar: (v: boolean) => void;
   setDeparture: (t: number | null) => void;
@@ -195,6 +200,7 @@ interface State {
   loadRoute: (id: string) => void;
   deleteRoute: (id: string) => void;
   renameRoute: (id: string, name: string) => void;
+  setRouteThumb: (id: string, thumb: string) => void;
 }
 
 /** Überschreibungen von Etappen entfernen, die es nicht mehr gibt. */
@@ -242,6 +248,7 @@ export const useStore = create<State>()(
       networkLines: [],
       stopCategories: ['cafe', 'water', 'bike'],
       showPhotos: true,
+      photoSource: 'commons',
       mapillaryToken: '',
       showRadar: true,
       library: [],
@@ -383,6 +390,7 @@ export const useStore = create<State>()(
       setShowStops: (showStops) => set({ showStops }),
       setStopCategories: (stopCategories) => set({ stopCategories }),
       setShowPhotos: (showPhotos) => set({ showPhotos }),
+      setPhotoSource: (photoSource) => set({ photoSource, photos: [], activePhoto: null }),
       setMapillaryToken: (mapillaryToken) => set({ mapillaryToken: mapillaryToken.trim() }),
       setShowRadar: (showRadar) => set({ showRadar }),
       setDeparture: (departure) => set({ departure }),
@@ -422,6 +430,8 @@ export const useStore = create<State>()(
             presetId: s.presetId,
             length: stats.length,
             ascend: stats.ascend,
+            // altes Bild behalten, bis das neue fertig ist
+            thumb: s.library.find((r) => r.id === id)?.thumb,
           };
           const library = [entry, ...s.library.filter((r) => r.id !== id)];
           return { library, savedId: id, routeName: name };
@@ -446,6 +456,9 @@ export const useStore = create<State>()(
       },
       deleteRoute: (id) =>
         set((s) => ({ library: s.library.filter((r) => r.id !== id), savedId: s.savedId === id ? null : s.savedId })),
+      // savedAt mitziehen, damit das Bild auch auf andere Geräte synchronisiert wird
+      setRouteThumb: (id, thumb) =>
+        set((s) => ({ library: s.library.map((r) => (r.id === id ? { ...r, thumb, savedAt: Date.now() } : r)) })),
       renameRoute: (id, name) =>
         set((s) => ({
           // savedAt mitziehen, damit die Umbenennung synchronisiert wird
@@ -497,6 +510,7 @@ export const useStore = create<State>()(
         networkGroups: s.networkGroups,
         stopCategories: s.stopCategories,
         showPhotos: s.showPhotos,
+        photoSource: s.photoSource,
         mapillaryToken: s.mapillaryToken,
         showRadar: s.showRadar,
         library: s.library,

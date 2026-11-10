@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { renderSVG } from 'uqr';
 import { createShareLink, type ShareLink } from '../api/share';
+import type { CombinedRoute } from '../domain/route';
 import { useSite } from '../api/site';
 import { useStore } from '../store';
 import { Icon } from './Icon';
@@ -8,7 +9,7 @@ import { Icon } from './Icon';
 /** Größer passt kaum noch zuverlässig in einen QR-Code */
 const QR_MAX = 2000;
 
-function ShareSheet({ onClose }: { onClose: () => void }) {
+function ShareSheet({ route, onClose }: { route: CombinedRoute | null; onClose: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
   const [link, setLink] = useState<ShareLink | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -18,10 +19,13 @@ function ShareSheet({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     ref.current?.showModal();
-    createShareLink()
+    createShareLink(route)
       .then(setLink)
       .catch((e: Error) => setError(e.message));
+    // Route steht beim Öffnen fest
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  useEffect(() => () => void (link?.image && URL.revokeObjectURL(link.image)), [link]);
 
   const copy = async () => {
     if (!link) return;
@@ -59,6 +63,9 @@ function ShareSheet({ onClose }: { onClose: () => void }) {
         {error && <p className="admin-check error">{error}</p>}
         {link && (
           <>
+            {link.image && (
+              <img className="share-preview" src={link.image} alt="Vorschau, wie sie im Messenger erscheint" />
+            )}
             {qr ? (
               <div
                 className="share-qr"
@@ -110,19 +117,14 @@ function ShareSheet({ onClose }: { onClose: () => void }) {
 }
 
 /** Knopf „Teilen“ neben dem Export */
-export function ShareButton({ disabled }: { disabled: boolean }) {
+export function ShareButton({ route }: { route: CombinedRoute | null }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button
-        className="share-btn"
-        disabled={disabled}
-        onClick={() => setOpen(true)}
-        title="Link und QR-Code zur Route"
-      >
+      <button className="share-btn" disabled={!route} onClick={() => setOpen(true)} title="Link und QR-Code zur Route">
         <Icon name="share" size={16} /> Teilen
       </button>
-      {open && <ShareSheet onClose={() => setOpen(false)} />}
+      {open && <ShareSheet route={route} onClose={() => setOpen(false)} />}
     </>
   );
 }

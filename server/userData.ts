@@ -162,10 +162,16 @@ export class UserData {
     return join(this.dataDir, 'shares', `${id}.json`);
   }
 
-  async createShare(uid: string, data: unknown): Promise<string> {
+  /** Vorschaubild eines Teilen-Links (JPEG) */
+  shareImage(id: string) {
+    return join(this.dataDir, 'shares', `${id}.jpg`);
+  }
+
+  async createShare(uid: string, data: unknown, image?: Buffer): Promise<string> {
     await mkdir(join(this.dataDir, 'shares'), { recursive: true });
     const id = randomBytes(6).toString('base64url');
     await writeJson(this.shareFile(id), { uid, createdAt: Date.now(), data });
+    if (image) await writeFile(this.shareImage(id), image);
     return id;
   }
 

@@ -2,7 +2,7 @@ import { bearing, cumulativeDistances, haversine, pointAtDistance, type LngLat }
 
 export interface Photo {
   id: string;
-  source: 'panoramax' | 'mapillary';
+  source: 'panoramax' | 'mapillary' | 'commons';
   coord: LngLat;
   /** Meter ab Routenstart */
   along: number;
@@ -14,6 +14,10 @@ export interface Photo {
   /** Blickrichtung (Grad) */
   heading?: number;
   author?: string;
+  /** Bildtitel (Commons) */
+  title?: string;
+  /** Lizenz, z. B. „CC BY-SA 4.0“ (Commons) */
+  license?: string;
 }
 
 interface Candidate {

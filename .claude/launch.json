@@ -44,6 +44,19 @@
         "--strictPort"
       ],
       "port": 5176
+    },
+    {
+      "name": "dev-claude",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "5177",
+        "--strictPort"
+      ],
+      "port": 5177
     }
   ]
 }

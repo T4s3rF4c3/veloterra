@@ -585,7 +585,7 @@ export function Sidebar({
                 <div className="route-footer">
                   <SaveRow route={route} />
                   <div className="footer-actions">
-                    <ShareButton disabled={!route} />
+                    <ShareButton route={route} />
                     <ExportMenu route={route} name={routeName} />
                   </div>
                 </div>
