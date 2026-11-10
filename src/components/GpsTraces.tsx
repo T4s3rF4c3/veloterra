@@ -116,16 +116,6 @@ export function GpsTracesOptions({ bounds }: { bounds: () => [number, number, nu
                 Zoomen lädt nichts nach. Spuren enden an den Kachelrändern; Nachbarbereich laden, um sie fortzusetzen.
               </p>
               <div className="gps-cache-actions">
-                {status && status.missing < status.total && (
-                  <button
-                    className="mini"
-                    disabled={!!loading || status.total > MAX_CELLS}
-                    onClick={() => b && loadRegion(b, true)}
-                    title="Kacheln des sichtbaren Bereichs neu von OpenStreetMap laden"
-                  >
-                    <Icon name="refresh" size={14} /> Bereich aktualisieren
-                  </button>
-                )}
                 <button
                   className="mini ghost"
                   onClick={() => {
