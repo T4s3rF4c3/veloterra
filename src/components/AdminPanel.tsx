@@ -464,20 +464,9 @@ export function AdminPanel({ bounds }: { bounds: () => Bbox | null }) {
   useEffect(() => setDraft(config.mapillaryToken), [config.mapillaryToken]);
 
   if (available === null) return <p className="muted small">Verbinde mit dem Server …</p>;
-  if (!available)
-    return (
-      <>
-        <NoServerCard />
-        <BackupCard />
-      </>
-    );
-  if (!user)
-    return (
-      <>
-        <LoginCard />
-        <BackupCard />
-      </>
-    );
+  // Datensicherung (Export/Import) nur angemeldet
+  if (!available) return <NoServerCard />;
+  if (!user) return <LoginCard />;
   if (!admin)
     return (
       <>

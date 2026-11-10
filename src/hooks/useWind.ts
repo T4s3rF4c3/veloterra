@@ -1,7 +1,14 @@
 import { useEffect, useState } from 'react';
 import type { LngLat } from '../domain/geo';
 import type { CombinedRoute } from '../domain/route';
-import { fetchWeatherAlong, weatherSamples, type WeatherPoint } from '../domain/weather';
+import {
+  fetchRainAlong,
+  fetchWeatherAlong,
+  rainSamples,
+  weatherSamples,
+  type RainPoint,
+  type WeatherPoint,
+} from '../domain/weather';
 import { fetchWind, type WindForecast } from '../domain/wind';
 
 /** Windvorhersage für einen Punkt (gerundet, gecacht). */
@@ -63,4 +70,37 @@ export function useRouteWeather(route: CombinedRoute | null, departure: number) 
   }, [key]);
 
   return { points, error };
+}
+
+/** Regen entlang der Route (alle ~2,5 km zur Ankunftszeit) für das Streckenband. */
+export function useRouteRain(route: CombinedRoute | null, departure: number) {
+  const [points, setPoints] = useState<RainPoint[] | null>(null);
+  const samples = route ? rainSamples(route.coords, route.dist, departure, route.time) : [];
+  const key = samples
+    .map((s) => `${s.coord[0].toFixed(2)},${s.coord[1].toFixed(2)},${Math.round(s.time / 900_000)}`)
+    .join('|');
+
+  useEffect(() => {
+    // alte Werte stehen lassen, bis neue da sind (kein Flackern beim Bearbeiten)
+    if (!samples.length) {
+      setPoints(null);
+      return;
+    }
+    let alive = true;
+    // kurz warten: beim Ziehen der Route nicht bei jedem Zwischenstand abfragen
+    const t = setTimeout(
+      () =>
+        fetchRainAlong(samples)
+          .then((p) => alive && setPoints(p))
+          .catch(() => undefined),
+      400,
+    );
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+
+  return points;
 }

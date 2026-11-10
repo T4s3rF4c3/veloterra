@@ -159,6 +159,7 @@ export function LoopPanel({
         forecast={wind.forecast}
         error={wind.error}
         onRecommend={(deg) => st().setLoopOptions({ direction: deg })}
+        start={loopStart}
       />
 
       {progress ? (

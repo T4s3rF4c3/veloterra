@@ -17,7 +17,7 @@ import { useColoring } from './hooks/useColoring';
 import { usePace } from './hooks/usePace';
 import { useRouting } from './hooks/useRouting';
 import { useStops } from './hooks/useStops';
-import { departureTime, useWind } from './hooks/useWind';
+import { departureTime, useRouteRain, useWind } from './hooks/useWind';
 import { redo, undo, useHistory } from './history';
 import { usePwa } from './pwa';
 import { useStore } from './store';
@@ -63,6 +63,8 @@ export default function App() {
         )
       : coloring.legend;
   const stops = useStops(route);
+  // Regen alle ~2,5 km zur Ankunftszeit – eigener Balken im Streckenband
+  const rain = useRouteRain(mode === 'route' ? route : null, departure);
   const checkedSurfaces = useStore((s) => s.checkedSurfaces);
   const sections = useMemo(() => (route ? uncertainSections(route) : []), [route]);
   const uncertainLines = useMemo(
@@ -237,7 +239,9 @@ export default function App() {
             </div>
           )}
         </div>
-        {mode === 'route' && route && <Streckenband route={route} climbs={coloring.climbs} legs={legs} stale={stale} />}
+        {mode === 'route' && route && (
+          <Streckenband route={route} climbs={coloring.climbs} legs={legs} stale={stale} rain={rain} />
+        )}
       </main>
     </div>
   );

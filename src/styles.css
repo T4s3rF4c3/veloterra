@@ -3401,3 +3401,55 @@ input.field:focus {
 .sync-hint > svg:last-child {
   color: var(--muted);
 }
+
+/* Sonnenauf- und -untergang im Wetter */
+.sun {
+  margin-top: 10px;
+}
+.sun-times {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.sun-times span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.sun-times .icon {
+  color: var(--warn-ink);
+}
+.sun-times small {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 12px;
+}
+.sun-note {
+  margin: 6px 0 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--warn-soft);
+  color: var(--warn-ink);
+  font-size: 12.5px;
+}
+.sun-note.dark {
+  background: var(--danger-soft);
+  color: var(--danger-ink);
+}
+
+/* Regen-Balken lädt */
+.band-loading {
+  animation: band-pulse 1.4s ease-in-out infinite;
+}
+@keyframes band-pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .band-loading {
+    animation: none;
+  }
+}

@@ -4,6 +4,8 @@ import { formatKm } from '../domain/geo';
 import type { CombinedRoute } from '../domain/route';
 import { ROADS, SURFACE_CLASS, SURFACES } from '../domain/settings';
 import type { LegStatus } from '../hooks/useRouting';
+import { RAIN_SCALE } from '../api/rain';
+import type { RainPoint } from '../domain/weather';
 import { useStore } from '../store';
 
 const SURFACE = Object.fromEntries(SURFACES.map((s) => [s.key, s]));
@@ -17,6 +19,23 @@ function inkOn(hex: string) {
 }
 
 const kmLabel = (m: number) => (m / 1000).toFixed(1).replace('.', ',');
+const clock = (t: number) => new Date(t).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+const mmLabel = (mm: number) => mm.toFixed(1).replace('.', ',');
+
+/** Farbe im Regen-Balken: Menge wie auf der Karte, sonst „möglich“ oder trocken */
+function rainFill(p: RainPoint) {
+  if (p.mm >= 0.1) {
+    let c = RAIN_SCALE[0];
+    for (const s of RAIN_SCALE) if (p.mm >= s.min) c = s;
+    return `rgb(${c.rgba.slice(0, 3).join(' ')})`;
+  }
+  return p.prob >= 40 ? 'url(#band-rain-maybe)' : '#303134';
+}
+
+function rainText(p: RainPoint) {
+  if (p.mm >= 0.1) return `Regen ${mmLabel(p.mm)} mm/h (${Math.round(p.prob)} %)`;
+  return p.prob >= 40 ? `Regen möglich (${Math.round(p.prob)} %)` : `trocken (${Math.round(p.prob)} %)`;
+}
 
 /** Schritt für die km-Teilung, so dass etwa 8–12 Striche passen. */
 function tickStep(km: number) {
@@ -34,11 +53,14 @@ export function Streckenband({
   climbs,
   legs,
   stale,
+  rain,
 }: {
   route: CombinedRoute;
   climbs: Climb[];
   legs: LegStatus[];
   stale: boolean;
+  /** Regen alle ~2,5 km zur Ankunftszeit (null = wird geladen) */
+  rain: RainPoint[] | null;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(800);
@@ -55,16 +77,18 @@ export function Streckenband({
     return () => ro.disconnect();
   }, []);
 
-  // Auf dem Handy nur Belag und Steigung
+  // Auf dem Handy nur Belag, Regen und Steigung
   const compact = w < 560;
   const PAD = { l: compact ? 64 : 92, r: 12 };
   const ROW = {
     ruler: 22,
     surface: 30,
     road: 54,
-    elevTop: compact ? 56 : 92,
-    elevBottom: compact ? 96 : 150,
+    rain: compact ? 52 : 76,
+    elevTop: compact ? 74 : 100,
+    elevBottom: compact ? 114 : 158,
   };
+  const RAIN_H = 12;
   const H = ROW.elevBottom + 24;
   const total = route.dist[route.dist.length - 1] || 1;
   const iw = Math.max(1, w - PAD.l - PAD.r);
@@ -117,6 +141,10 @@ export function Streckenband({
   // Was liegt unter dem Cursor?
   const at =
     hover !== null ? route.segments.find((s) => route.dist[s.from] <= hover && route.dist[s.to] >= hover) : undefined;
+  const rainAt =
+    hover !== null && rain?.length
+      ? rain.reduce((a, p) => (Math.abs(p.distance - hover) < Math.abs(a.distance - hover) ? p : a), rain[0])
+      : null;
   const km = total / 1000;
   const step = tickStep(km);
   const ticks: number[] = [];
@@ -131,6 +159,7 @@ export function Streckenband({
           <span className="band-meta strong">
             km {kmLabel(hover)}
             {at && ` · ${SURFACE[at.surface].label} · ${ROAD[at.road].label}`}
+            {rainAt && ` · um ${clock(rainAt.time)} ${rainText(rainAt)}`}
           </span>
         ) : (
           <span className="band-meta">Ziehen markiert einen Abschnitt</span>
@@ -171,6 +200,16 @@ export function Streckenband({
             <pattern id="band-rough" width="5" height="16" patternUnits="userSpaceOnUse">
               <rect x="3" width="2" height="16" fill="#202124" opacity="0.85" />
             </pattern>
+            <pattern
+              id="band-rain-maybe"
+              width="5"
+              height="5"
+              patternUnits="userSpaceOnUse"
+              patternTransform="rotate(45)"
+            >
+              <rect width="5" height="5" fill="#303134" />
+              <rect width="2" height="5" fill="#5f8fbf" />
+            </pattern>
             <pattern id="band-track" width="5" height="16" patternUnits="userSpaceOnUse">
               <rect width="5" height="16" fill="#303134" />
               <rect width="2" height="16" fill="#c9a27e" />
@@ -187,6 +226,9 @@ export function Streckenband({
                 Straßenart
               </text>
             )}
+            <text x={0} y={ROW.rain + 10}>
+              Regen
+            </text>
             <text x={0} y={ROW.elevTop + 12}>
               Steigung
             </text>
@@ -295,6 +337,34 @@ export function Streckenband({
                 </g>
               );
             })}
+
+          {/* Regen zur Ankunftszeit: Menge wie auf der Karte, gestreift = möglich */}
+          <g shapeRendering="crispEdges">
+            {!rain ? (
+              <rect x={PAD.l} y={ROW.rain} width={iw} height={RAIN_H} fill="#303134" className="band-loading">
+                <title>Regenvorhersage wird geladen …</title>
+              </rect>
+            ) : (
+              rain.map((p, i) => {
+                const a = i === 0 ? 0 : (rain[i - 1].distance + p.distance) / 2;
+                const b = i === rain.length - 1 ? total : (p.distance + rain[i + 1].distance) / 2;
+                return (
+                  <rect
+                    key={i}
+                    x={xOf(a)}
+                    y={ROW.rain}
+                    width={Math.max(0.6, xOf(b) - xOf(a))}
+                    height={RAIN_H}
+                    fill={rainFill(p)}
+                  >
+                    <title>
+                      km {kmLabel(a)}–{kmLabel(b)} · an {clock(p.time)} · {rainText(p)}
+                    </title>
+                  </rect>
+                );
+              })
+            )}
+          </g>
 
           {/* Steigung */}
           {climbs.map((c, i) => (

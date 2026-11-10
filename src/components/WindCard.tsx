@@ -1,3 +1,5 @@
+import type { LngLat } from '../domain/geo';
+import { sunTimes } from '../domain/sun';
 import { weatherInfo, type WeatherPoint } from '../domain/weather';
 import { compassLabel, windAt, type WindForecast, type WindSummary } from '../domain/wind';
 import { departureTime } from '../hooks/useWind';
@@ -26,9 +28,58 @@ interface Props {
   summary?: WindSummary | null;
   /** Rundtour: Richtung „gegen den Wind starten“ anbieten */
   onRecommend?: (deg: number) => void;
+  /** Startpunkt (für Sonnenauf- und -untergang) */
+  start?: LngLat | null;
+  /** Fahrzeit in Sekunden – für den Hinweis „Ankunft nach Sonnenuntergang“ */
+  duration?: number;
 }
 
-export function WindCard({ forecast, error, summary, onRecommend }: Props) {
+const hhmm = (t: number) => new Date(t).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+const mins = (ms: number) => {
+  const m = Math.round(ms / 60_000);
+  return m >= 60 ? `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')} h` : `${m} min`;
+};
+
+/** Sonnenauf- und -untergang am Abfahrtstag, mit Hinweis auf Fahrt im Dunkeln */
+function SunLine({ start, departure, duration }: { start: LngLat; departure: number; duration?: number }) {
+  const noon = new Date(departure);
+  noon.setHours(12, 0, 0, 0);
+  const sun = sunTimes(noon.getTime(), start[1], start[0]);
+  if (!sun.sunrise || !sun.sunset) return null;
+  const arrival = duration ? departure + duration * 1000 : null;
+  let note: string | null = null;
+  let dark = false;
+  if (departure < sun.sunrise) {
+    note = `Start ${mins(sun.sunrise - departure)} vor Sonnenaufgang – Licht mitnehmen`;
+    dark = !!sun.dawn && departure < sun.dawn;
+  } else if (departure > sun.sunset) {
+    note = 'Start nach Sonnenuntergang – Licht mitnehmen';
+    dark = true;
+  } else if (arrival && arrival > sun.sunset) {
+    note = `Ankunft ca. ${hhmm(arrival)} – ${mins(arrival - sun.sunset)} nach Sonnenuntergang${
+      sun.dusk && arrival > sun.dusk ? ', dann schon dunkel' : ''
+    }. Licht mitnehmen`;
+    dark = !!sun.dusk && arrival > sun.dusk;
+  } else if (arrival && sun.sunset - arrival < 45 * 60_000) {
+    note = `Ankunft ca. ${hhmm(arrival)} – knapp vor Sonnenuntergang`;
+  }
+  return (
+    <div className="sun">
+      <div className="sun-times">
+        <span title="Sonnenaufgang">
+          <Icon name="sunrise" size={16} /> {hhmm(sun.sunrise)}
+        </span>
+        <span title="Sonnenuntergang">
+          <Icon name="sunset" size={16} /> {hhmm(sun.sunset)}
+        </span>
+        {sun.dusk && <small title="Ende der bürgerlichen Dämmerung">dunkel ab {hhmm(sun.dusk)}</small>}
+      </div>
+      {note && <p className={`sun-note ${dark ? 'dark' : ''}`}>{note}</p>}
+    </div>
+  );
+}
+
+export function WindCard({ forecast, error, summary, onRecommend, start, duration }: Props) {
   const departure = useStore((s) => s.departure);
   const t = departureTime(departure);
   const w = forecast ? windAt(forecast, t) : null;
@@ -60,6 +111,7 @@ export function WindCard({ forecast, error, summary, onRecommend }: Props) {
           </button>
         )}
       </div>
+      {start && <SunLine start={start} departure={t} duration={duration} />}
       {error && <p className="muted small">{error}</p>}
       {!error && !forecast && <p className="muted small">Windvorhersage wird geladen …</p>}
       {forecast && !w && <p className="muted small">Für diesen Zeitpunkt gibt es noch keine Vorhersage.</p>}

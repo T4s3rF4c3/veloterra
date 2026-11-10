@@ -607,7 +607,13 @@ export function Sidebar({
                       .join(' · ') || 'Vorhersage zur Abfahrtszeit'
                   }
                 >
-                  <WindCard forecast={wind.forecast} error={wind.error} summary={coloring.wind} />
+                  <WindCard
+                    forecast={wind.forecast}
+                    error={wind.error}
+                    summary={coloring.wind}
+                    start={waypoints[0] ? [waypoints[0].lng, waypoints[0].lat] : null}
+                    duration={route.time}
+                  />
                   <WeatherAlong points={weather.points} error={weather.error} />
                 </Panel>
                 <ClimbList climbs={coloring.climbs} route={route} fit={fit} />
