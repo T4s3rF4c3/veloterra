@@ -11,6 +11,13 @@ export const SUGGESTION_COLORS = ['#4dabf7', '#f783ac', '#63e6be', '#ffa94d', '#
 export type Direction = number | 'any';
 export type Ranking = 'quality' | 'flat' | 'hilly' | 'wind' | 'novel';
 export type Climb = 'any' | 'low' | 'high';
+/** Form der Tour: Runde oder hin und wieder zurück */
+export type TourShape = 'loop' | 'outback';
+/** Hin & zurück: Rückweg auf demselben Weg oder möglichst anders */
+export type ReturnWay = 'same' | 'other';
+
+/** Umweg-Faktor Straße gegenüber Luftlinie – erste Schätzung für den Wendepunkt */
+export const DETOUR = 1.3;
 
 export const DIRECTIONS: { label: string; deg: number }[] = [
   { label: 'N', deg: 0 },
@@ -90,7 +97,16 @@ export function overlapRatio(coords: LngLat[], dist: number[]): number {
   return total > 0 ? dup / total : 0;
 }
 
-export function rateRoundTrip(leg: LegResult, settings: RoutingSettings, target: number): RoundTripStats {
+/**
+ * @param sameWay Hin & zurück auf demselben Weg: doppelt gefahrene Strecke
+ *                ist dann gewollt und zählt nicht als Abzug
+ */
+export function rateRoundTrip(
+  leg: LegResult,
+  settings: RoutingSettings,
+  target: number,
+  sameWay = false,
+): RoundTripStats {
   const dist = cumulativeDistances(leg.coords);
   const total = dist[dist.length - 1] || 1;
   let q = 0;
@@ -103,7 +119,7 @@ export function rateRoundTrip(leg: LegResult, settings: RoutingSettings, target:
     if (UNPAVED.includes(s.surface)) unpaved += len;
   }
   const quality = q / total;
-  const overlap = overlapRatio(leg.coords, dist);
+  const overlap = sameWay ? 0 : overlapRatio(leg.coords, dist);
   const lengthDev = Math.min(1, Math.abs(leg.length - target) / target);
   const score = Math.round(100 * quality * Math.max(0, 1 - 1.5 * overlap) * (1 - 0.8 * lengthDev));
   return {
@@ -136,6 +152,49 @@ export function sortSuggestions<T extends { stats: RoundTripStats }>(list: T[], 
     if (ranking === 'novel') return (b.stats.novelty ?? 0) - (a.stats.novelty ?? 0);
     return b.stats.score - a.stats.score;
   });
+}
+
+/** Zwei Etappen hintereinander zu einer verbinden (Hin- und Rückweg) */
+export function joinLegs(a: LegResult, b: LegResult): LegResult {
+  const off = a.coords.length - 1;
+  return {
+    coords: [...a.coords, ...b.coords.slice(1)],
+    ele: [...a.ele, ...b.ele.slice(1)],
+    segments: [
+      ...a.segments,
+      ...b.segments.map((s) => ({ ...s, from: s.from + off, to: s.to + off })).filter((s) => s.to > s.from),
+    ],
+    length: a.length + b.length,
+    ascend: a.ascend + b.ascend,
+    time: a.time + b.time,
+    hints: [...(a.hints ?? []), ...(b.hints ?? []).map((h) => ({ ...h, index: h.index + off }))],
+  };
+}
+
+/** Kennzahlen einer Etappe zum Vergleichen (Verbessern, Vorschläge) */
+export interface LegStats {
+  length: number;
+  ascend: number;
+  /** Anteile 0..1 */
+  paved: number;
+  unpaved: number;
+  /** Bundes- und Landesstraßen (viel Verkehr) */
+  busy: number;
+}
+
+export function legStats(leg: LegResult): LegStats {
+  const dist = cumulativeDistances(leg.coords);
+  const total = dist[dist.length - 1] || 1;
+  let paved = 0;
+  let unpaved = 0;
+  let busy = 0;
+  for (const s of leg.segments) {
+    const len = segLen(dist, s);
+    if (PAVED.includes(s.surface)) paved += len;
+    if (UNPAVED.includes(s.surface)) unpaved += len;
+    if (s.road === 'primary' || s.road === 'secondary') busy += len;
+  }
+  return { length: leg.length, ascend: leg.ascend, paved: paved / total, unpaved: unpaved / total, busy: busy / total };
 }
 
 /** Zwei Vorschläge gelten als gleich, wenn sie fast dieselbe Strecke fahren. */

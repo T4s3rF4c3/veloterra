@@ -375,3 +375,24 @@ export function cloneSettings(s: RoutingSettings): RoutingSettings {
     road: { ...s.road },
   };
 }
+
+/**
+ * Eigene Einstellungen einer Etappe auf ein geändertes Profil übertragen:
+ * Was die Etappe gegenüber dem alten Profil anders hatte („hier Schotter ok“,
+ * „weniger Höhenmeter“), bleibt – alles andere folgt dem neuen Profil.
+ */
+export function rebaseSettings(
+  own: RoutingSettings,
+  oldBase: RoutingSettings,
+  newBase: RoutingSettings,
+): RoutingSettings {
+  const out = cloneSettings(newBase);
+  for (const k of Object.keys(own) as (keyof RoutingSettings)[]) {
+    if (k === 'surface' || k === 'road') continue;
+    if (own[k] !== oldBase[k]) (out as unknown as Record<string, unknown>)[k] = own[k];
+  }
+  for (const k of Object.keys(own.surface) as SurfaceCat[])
+    if (own.surface[k] !== oldBase.surface[k]) out.surface[k] = own.surface[k];
+  for (const k of Object.keys(own.road) as RoadCat[]) if (own.road[k] !== oldBase.road[k]) out.road[k] = own.road[k];
+  return out;
+}

@@ -11,6 +11,8 @@ import {
   type Climb,
   type Direction,
   type Ranking,
+  type ReturnWay,
+  type TourShape,
 } from '../domain/roundtrip';
 import { summarizeWind, windAlong, type WindForecast } from '../domain/wind';
 import { useHeat } from '../api/heatStore';
@@ -39,6 +41,16 @@ const CLIMBS: { value: Climb; label: string; hint: string; ranking: Ranking }[] 
     ranking: 'flat',
   },
   { value: 'high', label: 'Gern viel', hint: 'Bergige Runden zuerst', ranking: 'hilly' },
+];
+
+const SHAPES: { value: TourShape; label: string; hint: string }[] = [
+  { value: 'loop', label: 'Runde', hint: 'Rundtour zurück zum Start' },
+  { value: 'outback', label: 'Hin & zurück', hint: 'In eine Richtung bis zu einem Wendepunkt und zurück' },
+];
+
+const RETURNS: { value: ReturnWay; label: string; hint: string }[] = [
+  { value: 'other', label: 'Anderer Weg', hint: 'Rückweg möglichst nicht auf dem Hinweg' },
+  { value: 'same', label: 'Gleicher Weg', hint: 'Auf demselben Weg zurück – bekannt und planbar' },
 ];
 
 /** Schieberegler: ganz rechts = ohne Grenze */
@@ -71,8 +83,10 @@ export function LoopPanel({
   const offroad = settings.bike === 'gravel' || settings.bike === 'mtb';
   const departure = departureTime(useStore((s) => s.departure));
   const st = useStore.getState;
-  const { generate, cancel, apply, progress, error } = useRoundTrip();
+  const { generate, cancel, apply, progress, error, stale } = useRoundTrip();
   const climb = options.climb ?? 'any';
+  const shape = options.shape ?? 'loop';
+  const returnWay = options.returnWay ?? 'other';
   const maxAscend = options.maxAscend ?? 0;
 
   // Farben bleiben an der Reihenfolge des Eintreffens, Sortierung nur in der Liste
@@ -80,7 +94,7 @@ export function LoopPanel({
     () =>
       sortSuggestions(
         suggestions.map((s, i) => {
-          const stats = rateRoundTrip(s.leg, settings, options.distance);
+          const stats = rateRoundTrip(s.leg, settings, options.distance, s.sameWay);
           if (wind.forecast) {
             const dist = cumulativeDistances(s.leg.coords);
             const w = windAlong(s.leg.coords, dist, wind.forecast, departure, s.leg.time);
@@ -121,8 +135,43 @@ export function LoopPanel({
         )}
       </div>
 
+      <label className="opt-label">Art</label>
+      <div className="choice">
+        {SHAPES.map((x) => (
+          <button
+            key={x.value}
+            className={shape === x.value ? 'on' : ''}
+            title={x.hint}
+            onClick={() => st().setLoopOptions({ shape: x.value })}
+          >
+            {x.label}
+          </button>
+        ))}
+      </div>
+      {shape === 'outback' && (
+        <>
+          <label className="opt-label">Rückweg</label>
+          <div className="choice">
+            {RETURNS.map((x) => (
+              <button
+                key={x.value}
+                className={returnWay === x.value ? 'on' : ''}
+                title={x.hint}
+                onClick={() => st().setLoopOptions({ returnWay: x.value })}
+              >
+                {x.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
       <label className="opt-label">
-        Länge <b className="val">{Math.round(options.distance / 1000)} km</b>
+        Länge {shape === 'outback' ? 'gesamt ' : ''}
+        <b className="val">{Math.round(options.distance / 1000)} km</b>
+        {shape === 'outback' && (
+          <small className="muted"> · Wendepunkt nach ca. {Math.round(options.distance / 2000)} km</small>
+        )}
       </label>
       <input
         type="range"
@@ -244,10 +293,16 @@ export function LoopPanel({
         </div>
       ) : (
         <button className="primary wide-btn" disabled={!loopStart} onClick={generate}>
-          {suggestions.length ? 'Neu suchen' : 'Rundtouren vorschlagen'}
+          {suggestions.length ? 'Neu suchen' : shape === 'outback' ? 'Touren vorschlagen' : 'Rundtouren vorschlagen'}
         </button>
       )}
       {error && <div className="error">{error}</div>}
+      {stale && suggestions.length > 0 && !progress && (
+        <p className="small warn-text">
+          Profil oder Sperren wurden geändert – die Vorschläge sind noch mit den alten Einstellungen berechnet. „Neu
+          suchen“ berücksichtigt die neuen; beim Übernehmen rechnet Veloterra die Strecke sonst mit deinem Profil neu.
+        </p>
+      )}
 
       {rated.length > 0 && (
         <ul className="suggestions">
@@ -282,7 +337,11 @@ export function LoopPanel({
                   {maxAscend > 0 && s.stats.ascend > maxAscend && (
                     <span className="warn">+{Math.round(s.stats.ascend - maxAscend)} hm über Limit</span>
                   )}
-                  <span>Richtung {DIRECTIONS[Math.round(s.direction / 45) % 8].label}</span>
+                  <span>
+                    {s.parts ? 'Wendepunkt' : 'Richtung'} {DIRECTIONS[Math.round(s.direction / 45) % 8].label}
+                    {s.parts && ` · km ${Math.round(s.parts[0].length / 1000)}`}
+                  </span>
+                  {s.parts && <span>{s.sameWay ? 'gleicher Rückweg' : 'anderer Rückweg'}</span>}
                   {s.stats.overlap > 0.08 && <span className="warn">{Math.round(s.stats.overlap * 100)}% doppelt</span>}
                   {s.stats.novelty !== undefined && (
                     <span className={s.stats.novelty >= 0.5 ? 'good-tag' : ''}>

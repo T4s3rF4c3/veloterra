@@ -7,13 +7,15 @@ import {
   isSimilar,
   legCountFor,
   overlapRatio,
+  joinLegs,
   rateRoundTrip,
   roundTripSettings,
   sortSuggestions,
   splitIntoLegs,
   type RoundTripStats,
 } from './roundtrip';
-import { DEFAULT_SETTINGS, PRESETS, cloneSettings } from './settings';
+import { DEFAULT_SETTINGS, PRESETS, cloneSettings, rebaseSettings } from './settings';
+import { improvedSettings, isBetter } from './improve';
 
 const loop = parseBRouter(fixture as never);
 
@@ -203,5 +205,95 @@ describe('Rundtour: Höhenmeter', () => {
     const sorted = sortSuggestions(list, 'flat', 650).map((s) => s.stats.ascend);
     // 300 hm ist zwar flach, aber ungeeignet (Score 20) → hinter den passenden
     expect(sorted).toEqual([400, 600, 300, 900]);
+  });
+});
+
+describe('Hin & zurück und Verbessern', () => {
+  const leg = (coords: LngLat[], ascend: number, surface: 'asphalt' | 'gravel' = 'asphalt') => ({
+    coords,
+    ele: coords.map(() => 100),
+    segments: [{ from: 0, to: coords.length - 1, tags: {}, surface, surfaceInferred: false, road: 'minor' as const }],
+    length: cumulativeDistances(coords).at(-1)!,
+    ascend,
+    time: 600,
+  });
+
+  it('verbindet Hin- und Rückweg zu einer Etappe', () => {
+    const a = leg(
+      [
+        [7, 49],
+        [7.01, 49],
+        [7.02, 49],
+      ],
+      50,
+    );
+    const b = leg(
+      [
+        [7.02, 49],
+        [7.01, 49.001],
+        [7, 49],
+      ],
+      30,
+      'gravel',
+    );
+    const j = joinLegs(a, b);
+    expect(j.coords).toHaveLength(5);
+    expect(j.ascend).toBe(80);
+    expect(j.segments[1]).toMatchObject({ from: 2, to: 4, surface: 'gravel' });
+  });
+
+  it('Hin & zurück auf demselben Weg zählt nicht als „doppelt“', () => {
+    const a = leg(
+      [
+        [7, 49],
+        [7.01, 49],
+      ],
+      0,
+    );
+    const back = leg(
+      [
+        [7.01, 49],
+        [7, 49],
+      ],
+      0,
+    );
+    const j = joinLegs(a, back);
+    expect(rateRoundTrip(j, DEFAULT_SETTINGS, j.length).overlap).toBeGreaterThan(0.9);
+    expect(rateRoundTrip(j, DEFAULT_SETTINGS, j.length, true).overlap).toBe(0);
+  });
+
+  it('übernimmt nur spürbare Verbesserungen ohne großen Umweg', () => {
+    const s = (length: number, ascend: number, paved = 1, busy = 0) => ({ length, ascend, paved, unpaved: 0, busy });
+    expect(isBetter('climb', 'road', s(10000, 300), s(11000, 220))).toBe(true);
+    expect(isBetter('climb', 'road', s(10000, 300), s(10000, 295))).toBe(false);
+    expect(isBetter('climb', 'road', s(10000, 300), s(14000, 100))).toBe(false);
+    expect(isBetter('traffic', 'road', s(10000, 0, 1, 0.4), s(10500, 0, 1, 0.1))).toBe(true);
+    expect(improvedSettings(DEFAULT_SETTINGS, 'climb').hills).toBe('max');
+    expect(improvedSettings(DEFAULT_SETTINGS, 'traffic').traffic).toBe(1);
+  });
+});
+
+describe('Profil ändern: Etappen mit eigenen Einstellungen', () => {
+  it('übernimmt die Profiländerung, behält aber die eigene Abweichung', () => {
+    const oldBase = cloneSettings(DEFAULT_SETTINGS);
+    // Etappe: „hier Schotter ok“ und weniger Höhenmeter
+    const own = cloneSettings(oldBase);
+    own.surface.gravel = 'prefer';
+    own.hills = 'max';
+    // Profil: Verkehr stärker meiden, Kopfstein verboten
+    const newBase = cloneSettings(oldBase);
+    newBase.traffic = 1;
+    newBase.surface.cobble = 'forbid';
+    const r = rebaseSettings(own, oldBase, newBase);
+    expect(r.traffic).toBe(1);
+    expect(r.surface.cobble).toBe('forbid');
+    expect(r.surface.gravel).toBe('prefer');
+    expect(r.hills).toBe('max');
+  });
+
+  it('ohne eigene Abweichung ist die Etappe danach genau das neue Profil', () => {
+    const oldBase = cloneSettings(DEFAULT_SETTINGS);
+    const newBase = cloneSettings(PRESETS[2].settings);
+    expect(rebaseSettings(cloneSettings(oldBase), oldBase, newBase)).toEqual(newBase);
   });
 });

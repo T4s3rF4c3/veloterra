@@ -38,7 +38,7 @@ Der aktuelle Radtyp steht oben rechts immer sichtbar; ein Klick öffnet das Prof
 | **Stück umfahren** | Route anklicken/antippen → „Dieses Stück umfahren“ (das ganze Stück gleicher Art, z. B. 850 m Schotter-Wirtschaftsweg) oder „Stück markieren“. Unter „Mehr …“: Abschnitt frei markieren, dauerhafte Regeln („Stück immer meiden“, eine Art wie Schotter generell meiden) und Luftbild/Street View/Mapillary/Komoot |
 | Abschnitt markieren | Auf die Route klicken → „Abschnitt ab hier markieren“ → Ende anklicken, **oder** im Höhenprofil ziehen |
 | Abschnitt **umfahren** | Sperrt den Abschnitt für die betroffene Etappe und rechnet sie neu |
-| Abschnitt **anders planen** | Setzt Wegpunkte an Anfang/Ende und gibt dem Teil eigene Einstellungen (z. B. „hier Schotter ok“) |
+| Abschnitt **anders planen** | Setzt Wegpunkte an Anfang/Ende und gibt dem Teil eigene Einstellungen (z. B. „hier Schotter ok“). Änderst du später das Profil, folgen solche Etappen der Änderung – nur ihre eigene Abweichung bleibt (gilt auch für „Verbessert“-Etappen). Importierte Etappen behalten ihr neutrales Profil, bis „Mit meinem Profil planen“ |
 | **Alternative** | Schaltet für die Etappe durch bis zu 4 BRouter-Alternativen |
 | **Immer meiden** | Speichert den Abschnitt dauerhaft als Sperre für alle Routen |
 | Luftbild | Ebenen → „Satellit“ (Esri, weltweit) oder **„Luftbild DE“** (amtliche Luftbilder 20–40 cm für RLP, NRW, Hessen, Bayern – schärfer und aktueller) wählen, oder auf die Route klicken → „Im Luftbild ansehen“ |
@@ -52,6 +52,7 @@ Der aktuelle Radtyp steht oben rechts immer sichtbar; ein Klick öffnet das Prof
 | Route kurz ausblenden | Taste **H** oder „Route ausblenden“ – um die Straße darunter zu sehen |
 | Fotos der Strecke | Auf die Route klicken → „Google Street View“ (Blick in Fahrtrichtung), „Straßenfotos (Mapillary)“ oder „In Komoot öffnen“ (Highlights mit Fotos) – jeweils in neuem Tab |
 | Rückgängig | Pfeile oben links oder **⌘/Strg+Z**, Wiederholen mit **⌘⇧Z / Strg+Y** – für Wegpunkte, Umfahren, Anders planen, Sperren, Einstellungen, Import, Leeren (letzte 50 Schritte). Nach „Leeren“ oder dem Ersetzen der Route erscheint kurz ein Hinweis mit „Rückgängig“ |
+| **Route verbessern** | Karte „Route verbessern“ unter der Übersicht: Ziel wählen – **Weniger Höhenmeter**, **Mehr Asphalt** (Gravel/MTB: **Mehr Schotter & Wege**) oder **Weniger Verkehr** – und „Vorschlag berechnen“. Jede Etappe wird mit geschärften Einstellungen neu gerechnet; übernommen wird nur, was spürbar besser ist und höchstens 30 % länger. Vorher/Nachher-Vergleich (Distanz, Anstieg, Fahrzeit, Ziel-Kennzahl), Vorschlag lila gestrichelt auf der Karte. Geht es nur mit größerem Umweg besser, wird das so angezeigt („Trotzdem übernehmen“). Übernommene Etappen stehen unter „Angepasste Etappen“; Rückgängig nimmt alles in einem Schritt zurück. Beispiel Traben-Trarbach → Bernkastel-Kues: 13,3 km / 332 hm über den Berg → 22,7 km / 41 hm an der Mosel, Fahrzeit +3 min |
 | Export | „GPX exportieren“ bzw. ▾ für weitere Formate: **GPX** mit Abbiegehinweisen (Wegpunkte „Rechts abbiegen“ …) · **TCX** mit CoursePoints für Garmin Edge · GPX „ohne Hinweise“ |
 | Import | „GPX importieren“ oder Datei auf die Karte ziehen (z. B. Komoot-/Strava-Export). Der Track wird mit dichten Stützpunkten nachgerechnet, damit Belag und Straßenart bekannt sind, und bleibt bis zur Bearbeitung exakt. „Mit meinem Profil planen“ rechnet ihn nach deinen Einstellungen neu |
 | Meine Routen | Route benennen und speichern – direkt über „GPX exportieren“ (Punkt = ungespeicherte Änderungen) oder unter **Meine** –, später laden, umbenennen, löschen (inkl. berechneter Etappen). Jede Route bekommt ein **Vorschaubild** (Luftbild mit Strecke), auch auf anderen Geräten |
@@ -105,9 +106,11 @@ Im Tab **„Ziele“** Startpunkt setzen, Umkreis (bis 5–80 km Luftlinie) und 
 
 Die öffentlichen Overpass-Server sind oft ausgelastet. Antwortet keiner innerhalb von 10 s, zeigt die App vorläufige Treffer aus der Photon-Suche (nur benannte Orte, ohne Details) und ersetzt sie, sobald Overpass antwortet.
 
-## Rundtour finden
+## Tour finden (Runde oder Hin & zurück)
 
-Im Tab **„Rundtour finden“** Startpunkt per Klick setzen (oder Ort suchen → Plus), Länge (20–200 km) und Richtung wählen (Kompass; ✱ = beliebig) und „Rundtouren vorschlagen“ klicken.
+Unter **Entdecken → Tour** Startpunkt per Klick setzen (oder Ort suchen → Plus), Art wählen – **Runde** oder **Hin & zurück** –, Länge (20–200 km) und Richtung (Kompass; ✱ = beliebig) und „vorschlagen“ klicken.
+
+- **Hin & zurück**: In jeder Richtung wird ein Wendepunkt in passender Entfernung gesucht (Länge gesamt, Wendepunkt nach etwa der Hälfte). **Rückweg „Gleicher Weg“** fährt dieselbe Strecke zurück (zählt nicht als „doppelt“); **„Anderer Weg“** sperrt für den Rückweg den Hinweg (außer am Start und am Wendepunkt), damit es woanders zurückgeht. Höhenmeter, Limit, Sortierung (Beste Straßen, Flach, Hügelig, Rückenwind heim, Neue Straßen) und Bewertung gelten genauso wie bei Runden. Beim Übernehmen wird der Wendepunkt ein Wegpunkt.
 
 - Es werden mehrere Richtungen über BRouters Rundtour-Modus berechnet (`engineMode=4`, beliebig = 6 Richtungen, sonst Wunschrichtung ±35°). Weicht die Länge um mehr als 12 % ab, wird der Suchradius bis zu zweimal nachkorrigiert.
 - **Stichstraßen werden entfernt**: Fährt eine Runde ein Stück und auf derselben Straße wieder zurück (direkt gewendet oder über eine kurze Wendeschleife wie einen Kreisverkehr), wird dieses Stück herausgeschnitten. Dafür ist zusätzlich BRouters Korrektur für schlecht liegende Hilfspunkte eingeschaltet. Gemessen an 9 Testrunden: doppelt gefahrene Strecke von 16,5 % auf 1,4 %.

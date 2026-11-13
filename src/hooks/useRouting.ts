@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { requestKey, routeLeg, type LegRequest } from '../api/brouter';
-import { combineLegs, legKey, type CombinedRoute, type LegResult, type Nogo } from '../domain/route';
+import {
+  combineLegs,
+  legKey,
+  type CombinedRoute,
+  type LegOverride,
+  type LegResult,
+  type Nogo,
+  type Waypoint,
+} from '../domain/route';
+import type { RoutingSettings } from '../domain/settings';
 import { useStore } from '../store';
 
 export interface LegStatus {
@@ -55,6 +64,31 @@ export function primeLeg(req: LegRequest, result: LegResult) {
   cache.set(requestKey(req), result);
 }
 
+/** Bereits berechnete Etappe zu einer Anfrage (z. B. zum Vergleichen beim Verbessern) */
+export function cachedLeg(req: LegRequest): LegResult | undefined {
+  return cache.get(requestKey(req));
+}
+
+/**
+ * Anfrage für eine Etappe der aktuellen Route – genau wie im Hook gebildet
+ * (eigene Einstellungen, Umfahrungen und Alternative der Etappe).
+ */
+export function legRequestFor(
+  from: Waypoint,
+  to: Waypoint,
+  settings: RoutingSettings,
+  override: LegOverride | undefined,
+  blockNogos: Nogo[],
+): LegRequest {
+  return {
+    from,
+    to,
+    settings: override?.settings ?? settings,
+    nogos: [...blockNogos, ...(override?.avoid ?? []).flatMap((a) => a.nogos)],
+    alternative: override?.alternative ?? 0,
+  };
+}
+
 /** Sperrzonen, die für jede Etappe gelten – dieselbe Reihenfolge wie im Hook. */
 export function globalNogos(blocks: { nogos: Nogo[] }[]): Nogo[] {
   return blocks.flatMap((b) => b.nogos);
@@ -82,14 +116,7 @@ export function useRouting() {
       const from = waypoints[i];
       const to = waypoints[i + 1];
       const key = legKey(from, to);
-      const o = overrides[key];
-      const req: LegRequest = {
-        from,
-        to,
-        settings: o?.settings ?? settings,
-        nogos: [...blockNogos, ...(o?.avoid ?? []).flatMap((a) => a.nogos)],
-        alternative: o?.alternative ?? 0,
-      };
+      const req = legRequestFor(from, to, settings, overrides[key], blockNogos);
       out.push({ key, req, rk: requestKey(req) });
     }
     return out;

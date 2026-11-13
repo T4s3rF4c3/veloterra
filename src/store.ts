@@ -5,8 +5,8 @@ import { legKey, type Block, type LegOverride, type LegResult, type Waypoint } f
 import type { Photo } from './api/photos';
 import type { NetworkGroup, NetworkKind, NetRoute } from './api/waymarked';
 import type { DestinationSort, Poi } from './domain/poi';
-import type { Climb, Direction, Ranking } from './domain/roundtrip';
-import { DEFAULT_SETTINGS, cloneSettings, type RoutingSettings } from './domain/settings';
+import type { Climb, Direction, Ranking, ReturnWay, TourShape } from './domain/roundtrip';
+import { DEFAULT_SETTINGS, cloneSettings, rebaseSettings, type RoutingSettings } from './domain/settings';
 
 export type ColorMode = 'surface' | 'road' | 'grade' | 'wind' | 'novelty' | 'plain';
 export type Basemap = 'light' | 'standard' | 'satellite' | 'aerial';
@@ -33,12 +33,20 @@ export interface LoopOptions {
   climb: Climb;
   /** höchstens so viele Höhenmeter (0 = ohne Grenze) */
   maxAscend: number;
+  /** Runde oder hin und zurück */
+  shape: TourShape;
+  /** Hin & zurück: Rückweg gleich oder anders */
+  returnWay: ReturnWay;
 }
 
 export interface Suggestion {
   id: string;
   leg: LegResult;
   direction: number;
+  /** Hin & zurück: Hin- und Rückweg einzeln (für exakte Etappen beim Übernehmen) */
+  parts?: [LegResult, LegResult];
+  /** Hin & zurück auf demselben Weg */
+  sameWay?: boolean;
 }
 
 export interface SavedRoute {
@@ -239,7 +247,15 @@ export const useStore = create<State>()(
       area: 'plan',
       discoverMode: 'loop',
       loopStart: null,
-      loopOptions: { distance: 60000, direction: 'any', ranking: 'quality', climb: 'any', maxAscend: 0 },
+      loopOptions: {
+        distance: 60000,
+        direction: 'any',
+        ranking: 'quality',
+        climb: 'any',
+        maxAscend: 0,
+        shape: 'loop',
+        returnWay: 'other',
+      },
       exploreOptions: {
         distance: 25000,
         categories: ['view', 'peak', 'castle', 'lake', 'cafe', 'bike'],
@@ -338,7 +354,18 @@ export const useStore = create<State>()(
           importTrack: null,
         }),
 
-      setSettings: (settings, presetId = null) => set({ settings, presetId }),
+      // Etappen mit eigenen Einstellungen folgen dem geänderten Profil (eigene Abweichungen bleiben);
+      // nur importierte Etappen behalten ihr neutrales Profil, bis „Mit meinem Profil planen“
+      setSettings: (settings, presetId = null) =>
+        set((s) => {
+          const overrides: Record<string, LegOverride> = {};
+          for (const [k, o] of Object.entries(s.overrides))
+            overrides[k] =
+              o.settings && o.presetLabel !== 'Import'
+                ? { ...o, settings: rebaseSettings(o.settings, s.settings, settings) }
+                : o;
+          return { settings, presetId, overrides };
+        }),
       setOverride: (key, o) =>
         set((s) => {
           const overrides = { ...s.overrides };

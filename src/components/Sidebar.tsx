@@ -21,6 +21,7 @@ import { InstallCard } from './InstallCard';
 import { ExplorePanel } from './ExplorePanel';
 import { Library, SaveRow } from './Library';
 import { HeatPanel } from './HeatPanel';
+import { ImprovePanel } from './ImprovePanel';
 import { LoopPanel } from './LoopPanel';
 import { NetworkPanel } from './NetworkPanel';
 import { Panel } from './Panel';
@@ -306,7 +307,7 @@ const AREAS: { value: Area; label: string; hint: string }[] = [
 ];
 
 const DISCOVER: { value: Exclude<Mode, 'route'>; label: string; hint: string }[] = [
-  { value: 'loop', label: 'Rundtour', hint: 'Runden ab einem Startpunkt vorschlagen lassen' },
+  { value: 'loop', label: 'Tour', hint: 'Runden oder Hin & zurück ab einem Startpunkt vorschlagen lassen' },
   { value: 'explore', label: 'Ziele', hint: 'Aussichtspunkte, Gipfel, Seen, Cafés in der Umgebung' },
   { value: 'network', label: 'Radwege', hint: 'Beschilderte Rad- und MTB-Routen' },
 ];
@@ -569,7 +570,7 @@ export function Sidebar({
                     Zwischenpunkt hinzu.
                   </p>
                   <div className="empty-actions">
-                    <button onClick={() => st().setMode('loop')}>Rundtour vorschlagen lassen</button>
+                    <button onClick={() => st().setMode('loop')}>Tour vorschlagen lassen</button>
                     <button onClick={() => st().setMode('network')}>Beschildertem Radweg folgen</button>
                   </div>
                 </div>
@@ -697,6 +698,7 @@ export function Sidebar({
                   />
                   <WeatherAlong points={weather.points} error={weather.error} />
                 </Panel>
+                <ImprovePanel route={route} />
                 <ClimbList climbs={coloring.climbs} route={route} fit={fit} />
                 {showStops && (
                   <StopsList loading={stops.loading} error={stops.error} partial={stops.partial} fly={fly} />
@@ -714,7 +716,11 @@ export function Sidebar({
                       {overrideLegs.map((l) => {
                         const o = overrides[l.key];
                         const tags = [
-                          isImport(l.key) ? 'importiert' : o.settings && 'eigene Einstellungen',
+                          isImport(l.key)
+                            ? 'importiert'
+                            : o.presetLabel?.startsWith('Verbessert')
+                              ? o.presetLabel
+                              : o.settings && 'eigene Einstellungen',
                           o.avoid?.length && `${o.avoid.length}× umfahren`,
                           o.alternative && `Alternative ${o.alternative}`,
                         ].filter(Boolean);
